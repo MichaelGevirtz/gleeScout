@@ -317,12 +317,21 @@ rows stay visible, same as mobile.
    populated `providers`). Left pane appears; right pane shows the
    same vertical ranked list as mobile screen 3, unchanged.
 4. **Provider details** — right pane swaps to `ProviderDetailsScreen`
-   (mobile screen 4, unchanged); left pane stays, now showing
-   "Currently viewing: `<name>`".
+   (mobile screen 4); left pane stays, now showing "Currently viewing:
+   `<name>`". **Revised by task-62**: the screen itself now opens with
+   a `SelectedProviderHeader` (eyebrow label + provider name) at the
+   top, rendered identically on mobile and desktop — see task-62's
+   Assignment Alignment for the rationale (the missing-header
+   readability gap existed identically on both surfaces, so a
+   desktop-only fix would have left mobile, the assignment's actual
+   required delivery surface, with the same gap).
 5. **M10/M11 loading + simulated answers** — right pane swaps through
    the same cosmetic loading animation then `SimulatedQAScreen`
-   (mobile screens 5/6, unchanged); left pane stays, same "Currently
-   viewing" line.
+   (mobile screens 5/6); left pane stays, same "Currently viewing"
+   line. **Revised by task-62**: `SimulatedQAScreen`'s results phase
+   also now opens with the same `SelectedProviderHeader`, before the
+   frozen SIMULATED banner (banner copy itself unchanged) — same
+   mobile/desktop-identical rationale as screen 4 above.
 6. **Reopening chat** — left pane's button sets `screen = "chat"`;
    right pane swaps to `ChatScreen`; the left pane's requirement list
    and provider count are untouched (derived from `state`/`providers`,

@@ -826,6 +826,115 @@
   personal/portfolio scope extension per D19, no roadmap milestone
   number by design.
 
+- **Task 59 — CORS support for browser-based (web) clients** (DONE,
+  see `tasks/completed/task-59-cors-support.md`): found and fixed
+  during a manual browser check of the app. `backend/src/server.ts`
+  registers `@fastify/cors` (v9, matching `fastify@^4.28.1`) with
+  default/permissive settings, before any route registration — no
+  route logic, response shapes, or status codes changed. Live-verified
+  against the running dev server: `OPTIONS /conversation` from
+  `Origin: http://localhost:8081` now returns `204` with
+  `access-control-allow-origin: *` (previously `404`, since Fastify
+  had no route for the browser's CORS preflight at all — every
+  cross-origin call from the Expo web target was silently failing at
+  the browser level as "Failed to fetch," never reaching a route
+  handler). `npm run typecheck` clean, `npm test` 301/301 passing
+  (unchanged from before this task — no regressions). PROJECT DECISION,
+  not an assignment requirement — exists solely to support D19's
+  already-approved, non-assignment desktop/web scope extension; native
+  Expo Go clients (the project's actual D4 target) were never affected
+  since CORS is a browser-only enforcement mechanism.
+  **Follow-up bug found during this task's own validation, fixed
+  separately in task-60** (see below): `POST /conversation` (and
+  likely any bodyless JSON-content-typed request) returned `400
+  FST_ERR_CTP_EMPTY_JSON_BODY` because `frontend/src/api/client.ts`
+  always sent `Content-Type: application/json` even when there's no
+  body (e.g. `createConversation()`).
+
+- **Task 60 — Fix bodyless requests sending a stale Content-Type
+  header** (DONE, see
+  `tasks/completed/task-60-fix-bodyless-content-type.md`): the
+  follow-up bug task-59 surfaced. `frontend/src/api/client.ts`'s
+  `request<T>()` helper now only includes `Content-Type:
+  application/json` in headers when `init?.body !== undefined` — no
+  change to any of the 5 exported function signatures, `BASE_URL`, or
+  `ApiError`. Classified **EXPLICIT** scope (not project-decision, per
+  task-59's precedent) — `client.ts` is the same code path for native
+  Expo Go and web, so this defect would have broken
+  `createConversation()` (the app's very first API call) on a real
+  device too, not just in a browser; it was never caught earlier
+  because the frontend had never been manually walked through against
+  a live backend end-to-end until this session (already a known,
+  recorded gap in the M15 section above). 5 new tests in
+  `client.test.ts` (3 confirming the header is omitted on bodyless
+  calls — `createConversation`, `getConversation`, `fetchProviders` —
+  2 confirming it's still sent on calls with a body —
+  `sendMessage`/`selectProvider` — as a regression guard). `frontend
+  npm test` 12 suites / 94 tests passing (89 pre-existing + 5 new),
+  `npx tsc --noEmit` clean. Live-verified against the running backend:
+  `curl -X POST http://localhost:3000/conversation` with no
+  `Content-Type` header and no body now returns `201` with a real
+  session (previously `400`). Together with task-59, both known
+  blockers to a full manual browser walkthrough of the app are now
+  resolved.
+
+- **Task 61 — Style the desktop ContextPanel (sidebar)** (DONE, see
+  `tasks/completed/task-61-context-panel-styling.md`): fixes a
+  bug-report finding that the desktop sidebar (task-57's
+  `ContextPanel`) rendered as raw/unstyled content — confirmed root
+  cause: the component had **zero** `StyleSheet` styling anywhere,
+  and no explicit width, so it shrank to hug its own unstyled text in
+  `App.tsx`'s flex row. Added a full `StyleSheet`: fixed `width: 280`
+  root container with padding/background/right-border (no `App.tsx`
+  change needed), typographic hierarchy (bold brand, uppercase muted
+  row labels, normal-weight values), a bordered/tinted "currently
+  viewing" chip as the strongest visual signal, and an action button
+  matching `App.tsx`'s existing chat-pill treatment — all reusing the
+  neutral chrome palette already established elsewhere in the app
+  (`#111827`/`#9ca3af`/`#e5e7eb`-family), no new palette. Style-only —
+  same information architecture, no new props/behavior. Self-caught
+  and fixed one regression during implementation: an initial pass
+  split the "currently viewing" line into two separate `Text`
+  elements, which changed its rendered text and broke two exact-string
+  test assertions (`ContextPanel.test.tsx`, `App.test.tsx`) — fixed by
+  nesting label/value as sibling `Text` children inside one parent
+  `Text` (RN's standard mixed-style-inline-text pattern), restoring
+  the original concatenated string. `npx tsc --noEmit` clean; final
+  `npm test` (after task-62 landed concurrently) is 13/13 suites, 99/99
+  tests passing, no regressions. PROJECT DECISION — D19-scoped (the
+  component only exists to support the non-assignment desktop
+  extension); no manual browser resize check performed by Claude this
+  session (no browser automation available), left for the user.
+
+- **Task 62 — "Selected provider" header on details/QA screens** (DONE,
+  see `tasks/completed/task-62-selected-provider-header.md`): fixes a
+  bug-report finding that `ProviderDetailsScreen` (M9 details) and
+  `SimulatedQAScreen`'s results phase (M11 simulated answers) never
+  render the selected provider's name as a distinct header — both
+  computed `providerName` already but only used it inline (a button
+  label, one banner sentence). New purely-presentational
+  `frontend/src/components/SelectedProviderHeader.tsx`
+  (`{ providerName: string }`, no fetching, matching the M15 screen
+  convention) renders an eyebrow label + strong title in its own
+  bordered container, reusing task-57's `ContextPanel` chrome palette
+  (`#111827` primary text, `#9ca3af` muted label). Mounted at the top
+  of both screens — before `ProviderDetailsScreen`'s `explanation`
+  text, and before `SimulatedQAScreen`'s frozen SIMULATED banner
+  (banner copy itself untouched). By direct instruction, renders
+  identically on mobile and desktop — a confirmed, reasoned revision
+  of `design/m14-ux-spec.md`'s "mobile screen 4, unchanged" note (see
+  the task's own Assignment Alignment section), not an oversight. 5 new
+  tests (1 in a new `SelectedProviderHeader.test.tsx`, 2 in
+  `ProviderDetailsScreen.test.tsx` — FACT-name and hostname-fallback
+  cases, 2 in `SimulatedQAScreen.test.tsx` — results-phase render with
+  the given provider name, absent during `phase: "loading"`).
+  `frontend npm test` 13 suites / 99 tests passing (94 pre-existing + 5
+  net new — one loading-phase test needed an explicit `unmount()`
+  inside `act()` to avoid a pre-existing fake-timers/RNTL-autocleanup
+  ordering issue in that describe block, not a new defect), `npx tsc
+  --noEmit` clean, no regressions. Manual desktop/mobile visual check
+  not run this session (structural/unit coverage only).
+
 ## Current State
 
 - `docs/Home Assignment.pdf` in place.

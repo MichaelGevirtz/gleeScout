@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ConversationState } from "../domain/types";
 
 export interface ContextPanelProps {
@@ -55,29 +55,117 @@ export default function ContextPanel({
   const eventFields = computeEventFields(state);
 
   return (
-    <View testID="context-panel">
-      <Text testID="context-panel-brand">GleeScout</Text>
+    <View testID="context-panel" style={styles.panel}>
+      <Text testID="context-panel-brand" style={styles.brand}>
+        GleeScout
+      </Text>
 
-      <View testID="context-event-list">
+      <View testID="context-event-list" style={styles.eventList}>
         {eventFields.map((field) => (
-          <View key={field.key} testID={`context-row-${field.key}`}>
-            <Text testID={`context-row-${field.key}-label`}>{field.label}</Text>
-            <Text testID={`context-row-${field.key}-value`}>{field.value}</Text>
+          <View key={field.key} testID={`context-row-${field.key}`} style={styles.row}>
+            <Text testID={`context-row-${field.key}-label`} style={styles.rowLabel}>
+              {field.label}
+            </Text>
+            <Text testID={`context-row-${field.key}-value`} style={styles.rowValue}>
+              {field.value}
+            </Text>
           </View>
         ))}
       </View>
 
-      <Text testID="context-match-count">{matchCount} matches found</Text>
+      <Text testID="context-match-count" style={styles.matchCount}>
+        {matchCount} matches found
+      </Text>
 
       {currentlyViewing !== undefined && (
-        <View testID="context-currently-viewing">
-          <Text>Currently viewing: {currentlyViewing}</Text>
+        <View testID="context-currently-viewing" style={styles.currentlyViewing}>
+          <Text>
+            <Text style={styles.currentlyViewingLabel}>Currently viewing: </Text>
+            <Text style={styles.currentlyViewingValue}>{currentlyViewing}</Text>
+          </Text>
         </View>
       )}
 
-      <Pressable testID="context-panel-button" onPress={isChatOpen ? onBackToMatches : onOpenChat}>
-        <Text>{isChatOpen ? "Back to matches" : "Chat"}</Text>
+      <Pressable
+        testID="context-panel-button"
+        onPress={isChatOpen ? onBackToMatches : onOpenChat}
+        style={styles.button}
+      >
+        <Text style={styles.buttonLabel}>{isChatOpen ? "Back to matches" : "Chat"}</Text>
       </Pressable>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  panel: {
+    width: 280,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: "#fafafa",
+    borderRightWidth: 1,
+    borderRightColor: "#e5e7eb",
+    gap: 20,
+  },
+  brand: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  eventList: {
+    gap: 12,
+  },
+  row: {
+    gap: 2,
+  },
+  rowLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    color: "#9ca3af",
+  },
+  rowValue: {
+    fontSize: 14,
+    color: "#111827",
+  },
+  matchCount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6b7280",
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+  },
+  currentlyViewing: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#eef2ff",
+    borderWidth: 1,
+    borderColor: "#c7d2fe",
+    gap: 2,
+  },
+  currentlyViewingLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    color: "#4338ca",
+  },
+  currentlyViewingValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  button: {
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#111827",
+  },
+  buttonLabel: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+});

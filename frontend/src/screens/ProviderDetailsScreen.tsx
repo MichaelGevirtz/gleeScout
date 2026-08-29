@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ProviderCandidate, ProviderCandidateFields, RankingDimension } from "../domain/types";
 import { hostnameFromUrl } from "../shared/hostname";
+import SelectedProviderHeader from "../components/SelectedProviderHeader";
 
 export interface ProviderDetailsScreenProps {
   candidate: ProviderCandidate;
@@ -76,6 +77,8 @@ export default function ProviderDetailsScreen({
 
   return (
     <ScrollView testID="provider-details-screen">
+      <SelectedProviderHeader providerName={providerName} />
+
       {explanation ? <Text testID="explanation">{explanation}</Text> : null}
 
       <View testID="fact-section">

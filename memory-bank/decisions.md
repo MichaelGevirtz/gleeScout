@@ -1053,6 +1053,22 @@ narrative clarity, but M15 must implement that as one client-side
 cosmetic animation over a single in-flight request, not two sequential
 API calls.
 
+**Addendum (task-62, post-freeze)**: A bug report noted that neither
+`ProviderDetailsScreen` nor `SimulatedQAScreen`'s results phase ever
+renders the selected provider's name as a distinct header — the frozen
+spec's "mobile screen 4, unchanged" / "mobile screens 5/6, unchanged"
+notes (screen-by-screen desktop section) said these two screens needed
+no changes for the desktop split-pane addendum, but that note never
+addressed this readability gap, which exists identically on mobile.
+Per direct first-person reviewer instruction, both screens now render
+a small `SelectedProviderHeader` at the top, identically on mobile and
+desktop (not a desktop-only cosmetic fix) — see task-62's own
+Assignment Alignment section for the full rationale and
+`design/m14-ux-spec.md`'s screen 4/5-6 entries, updated in place to
+reflect this. This is a scoped, reasoned correction to a real
+understandability gap (Part 6), not a new redesign — no new screens,
+navigation, or interaction model.
+
 **Status**: PROJECT DESIGN DECISION, confirmed 2026-08-29 (reviewer's
 own words: "The final UX direction is approved... Freeze this design
 as the M14 baseline for implementation"). M14 is complete.

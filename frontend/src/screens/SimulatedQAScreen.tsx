@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { SimulatedAnswer } from "../domain/types";
+import SelectedProviderHeader from "../components/SelectedProviderHeader";
 
 /**
  * States 5-6 (design/m14-ux-spec.md "5 & 6. M10/M11 loading +
@@ -99,6 +100,8 @@ interface ResultsPhaseProps {
 function ResultsPhase({ providerName, answers, onBack }: ResultsPhaseProps) {
   return (
     <ScrollView testID="qa-results" style={styles.container}>
+      <SelectedProviderHeader providerName={providerName} />
+
       <Text testID="qa-banner" style={styles.banner}>
         {simulatedBannerText(providerName)}
       </Text>

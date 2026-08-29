@@ -96,6 +96,43 @@ describe("selectProvider", () => {
   });
 });
 
+describe("Content-Type header", () => {
+  function headersOf(callIndex = 0): Record<string, string> {
+    const call = (global.fetch as jest.Mock).mock.calls[callIndex];
+    return (call[1]?.headers ?? {}) as Record<string, string>;
+  }
+
+  it("createConversation (bodyless POST) omits Content-Type", async () => {
+    mockFetchOnce(201, { sessionId: "s1", state });
+    await createConversation();
+    expect(headersOf()["Content-Type"]).toBeUndefined();
+  });
+
+  it("getConversation (bodyless GET) omits Content-Type", async () => {
+    mockFetchOnce(200, { state });
+    await getConversation("s1");
+    expect(headersOf()["Content-Type"]).toBeUndefined();
+  });
+
+  it("fetchProviders (bodyless POST) omits Content-Type", async () => {
+    mockFetchOnce(200, { providers: [] });
+    await fetchProviders("s1");
+    expect(headersOf()["Content-Type"]).toBeUndefined();
+  });
+
+  it("sendMessage (has a body) still sends Content-Type: application/json", async () => {
+    mockFetchOnce(200, { state });
+    await sendMessage("s1", "hello");
+    expect(headersOf()["Content-Type"]).toBe("application/json");
+  });
+
+  it("selectProvider (has a body) still sends Content-Type: application/json", async () => {
+    mockFetchOnce(200, { answers: [] });
+    await selectProvider("s1", candidate);
+    expect(headersOf()["Content-Type"]).toBe("application/json");
+  });
+});
+
 describe("error body fallback", () => {
   it("still throws a sensible ApiError when the error body isn't JSON", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({

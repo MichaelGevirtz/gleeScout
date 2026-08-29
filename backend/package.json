@@ -12,6 +12,7 @@
     "eval:extraction": "tsx scripts/evalExtraction.ts"
   },
   "dependencies": {
+    "@fastify/cors": "^9.0.1",
     "@google/genai": "^2.19.0",
     "@mendable/firecrawl-js": "^4.37.0",
     "dotenv": "^16.4.5",

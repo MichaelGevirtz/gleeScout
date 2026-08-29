@@ -75,6 +75,16 @@ describe("SimulatedQAScreen", () => {
 
       expect(clearIntervalSpy).toHaveBeenCalled();
     });
+
+    it("does not render the selected-provider header (no provider context yet)", async () => {
+      const { unmount } = await render(<SimulatedQAScreen phase="loading" />);
+
+      expect(screen.queryByTestId("selected-provider-header")).toBeNull();
+
+      await act(async () => {
+        unmount();
+      });
+    });
   });
 
   describe("phase: results", () => {
@@ -142,6 +152,18 @@ describe("SimulatedQAScreen", () => {
         expect(bannerString.toLowerCase()).not.toContain(phrase);
         expect(badgeString.toLowerCase()).not.toContain(phrase);
       }
+    });
+
+    it("renders the selected-provider header with the given provider name", async () => {
+      const answers = makeAnswers();
+      await render(
+        <SimulatedQAScreen phase="results" providerName="Acme Catering" answers={answers} onBack={() => {}} />
+      );
+
+      expect(screen.getByTestId("selected-provider-header")).toBeTruthy();
+      expect(screen.getByTestId("selected-provider-header-name").props.children).toBe(
+        "Acme Catering",
+      );
     });
 
     it("renders zero cards for an empty answers array without crashing", async () => {

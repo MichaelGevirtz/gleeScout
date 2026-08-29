@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import cors from "@fastify/cors";
 import { z } from "zod";
 import { createSession, getSession, updateSession } from "./store/sessionStore.js";
 import { orchestrateMessage, type OrchestrateMessageParams } from "./conversation/orchestrateMessage.js";
@@ -39,6 +40,10 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
   const generateList = deps.generateList ?? generateProviderList;
   const select = deps.selectProvider ?? selectProvider;
   const app = Fastify({ logger: true });
+
+  // Permissive CORS: this prototype has no auth/multi-tenant boundary (D14's
+  // addendum), so there is no origin to distinguish or protect against.
+  app.register(cors);
 
   app.get("/health", async () => {
     return { status: "ok" };

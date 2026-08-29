@@ -48,6 +48,49 @@ const fullDimensionScores: Record<RankingDimension, number | null> = {
 
 const noop = () => {};
 
+describe("ProviderDetailsScreen — selected provider header", () => {
+  it("renders the header at the top with the FACT name when present", async () => {
+    await render(
+      <ProviderDetailsScreen
+        candidate={fullCandidate}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    expect(screen.getByTestId("selected-provider-header")).toBeTruthy();
+    expect(screen.getByTestId("selected-provider-header-label").props.children).toBe(
+      "Selected provider",
+    );
+    expect(screen.getByTestId("selected-provider-header-name").props.children).toBe(
+      "Acme Bounce Houses",
+    );
+  });
+
+  it("falls back to the URL's hostname when fields.name is absent", async () => {
+    const candidateWithoutName: ProviderCandidate = {
+      url: "https://www.bouncy-fun-rentals.com/",
+      fields: {
+        pricing: fact("$300/day"),
+      },
+    };
+
+    await render(
+      <ProviderDetailsScreen
+        candidate={candidateWithoutName}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    expect(screen.getByTestId("selected-provider-header-name").props.children).toBe(
+      "www.bouncy-fun-rentals.com",
+    );
+  });
+});
+
 describe("ProviderDetailsScreen — sourced facts", () => {
   it("renders one fact row per non-null fields.* entry, with value + source caption", async () => {
     await render(
