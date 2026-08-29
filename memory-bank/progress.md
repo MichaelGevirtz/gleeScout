@@ -1429,6 +1429,51 @@
   is unavailable. `createInitialState()` deliberately still returns an
   empty transcript and is test-guarded to stay that way.
 
+- **Task 77 — Bounded-concurrency parallelization of discover/enrich**
+  (DONE, see `tasks/completed/task-77-parallelize-discover-enrich.md`):
+  found while investigating a real, user-reported slow "clown, New
+  York" request — `POST /conversation/:id/providers` traced to up to
+  19 fully sequential network/LLM round trips. New
+  `backend/src/shared/concurrency.ts` exports `mapWithConcurrency`, a
+  small bounded worker-pool helper (input-order results, fail-fast on
+  a rejecting `fn`); `discoverProviderCandidates.ts` and
+  `enrichProviderCandidates.ts` each now run their per-candidate work
+  through it with their own `CONCURRENCY_LIMIT = 3`, deliberately
+  conservative given Gemini's documented 5-requests/minute free-tier
+  cap (task-08) — parallelizing cuts wall-clock time, not total call
+  volume. `MAX_DISCOVERY_RESULTS`/`MAX_ENRICHMENT_CANDIDATES` and all
+  per-candidate error isolation (catch, log, skip/pass-through)
+  unchanged. Two existing tests that asserted strict one-at-a-time
+  ordering were deliberately rewritten to assert bounded concurrency
+  instead (not a regression — see D23). 5 new tests
+  (`shared/concurrency.test.ts`), `npm test` 39 files / 346 tests
+  passing (340 pre-existing + 5 new + 1 net test-count change from the
+  enrichment ordering test split), `npm run typecheck` and `npm run
+  build` both clean. No live-server before/after latency measurement
+  taken (no real API keys used this session) — see D23.
+
+- **Task 78 — Real per-step timing in generateProviderList's trace
+  events** (DONE, see
+  `tasks/completed/task-78-trace-step-timing.md`): the other half of
+  the "clown, New York" latency investigation. `TraceEventSchema`
+  (`backend/src/domain/trace.ts`) gained an optional
+  `durationMs: number` field; `generateProviderList.ts` now stamps
+  each of its four trace events (`discover`/`enrich`/`rank`/
+  `recommend`) with the real time that step completed and how long it
+  took, instead of one shared `new Date().toISOString()` computed
+  after everything had already finished (today's actual bug — the
+  trace could show *that* discovery/enrichment/ranking happened, never
+  *which one was slow*). `recommend` (no real work of its own) gets
+  `durationMs: 0` rather than an invented duration. Scoped to
+  `generateProviderList.ts` only — `selectProvider.ts`'s own trace
+  events likely have the same gap but that's a separate follow-up
+  (see D24). 5 new tests (4 in `domain/trace.test.ts`, 1 in
+  `recommendation/generateProviderList.test.ts` using injected
+  `discover`/`enrich` fakes with artificial delay to prove real timing
+  instead of four identical timestamps), `npm test` 39 files / 350
+  tests passing, `npm run typecheck` and `npm run build` both clean.
+  Not yet observed against a live request with real API keys.
+
 ## Blocked Work
 
 - None.

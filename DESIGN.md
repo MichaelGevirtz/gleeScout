@@ -182,11 +182,16 @@ than being written after the fact.
   implemented — the assignment treats a fresh start on every run as
   acceptable, so building for cross-run reuse would be solving a
   problem that doesn't exist here.
-- Per-candidate provider-fact extraction runs sequentially rather than
-  in parallel, a deliberate choice given today's Gemini free-tier rate
-  limit rather than a limitation of the pipeline's shape. Parallelizing
-  it later (which the assignment calls out as a bonus) would only
-  change the loop body, not the surrounding design.
+- Per-candidate provider-fact extraction and per-candidate review
+  enrichment each now run with bounded concurrency (a small worker
+  pool, 3 candidates in flight at a time) instead of one candidate at
+  a time — implementing the assignment's named "Parallel provider
+  research" bonus. The concurrency limit stays conservative rather
+  than "as parallel as possible" because Gemini's free tier is
+  documented at 5 requests/minute — parallelizing cuts wall-clock time
+  for a fixed number of calls, it doesn't reduce that call volume, so
+  going wider risks turning today's occasional rate-limit failure into
+  a routine one.
 - Enriching a provider with qualitative review signal is capped to a
   smaller subset of the already-discovered candidates, rather than
   enriching everything discovery found — discovery and enrichment

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   enrichProviderCandidates,
   MAX_ENRICHMENT_CANDIDATES,
+  CONCURRENCY_LIMIT,
   type AnalyzeFn,
   type EnrichmentSearchFn,
 } from "./enrichProviderCandidates.js";
@@ -89,11 +90,8 @@ describe("enrichProviderCandidates", () => {
     expect(capturedQuery).toBe("Bounce Palace reviews");
   });
 
-  it("calls search then analyze sequentially per candidate, not concurrently across candidates", async () => {
-    const candidates = [
-      makeCandidate("https://a.com", { name: "A", location: "X" }),
-      makeCandidate("https://b.com", { name: "B", location: "X" }),
-    ];
+  it("calls search before analyze within a single candidate's own pipeline", async () => {
+    const candidate = makeCandidate("https://a.com", { name: "A", location: "X" });
     const order: string[] = [];
     const search: EnrichmentSearchFn = async ({ query }) => {
       order.push(`search-start:${query}`);
@@ -108,18 +106,41 @@ describe("enrichProviderCandidates", () => {
       return NO_TAGS;
     };
 
-    await enrichProviderCandidates({ candidates, search, analyze });
+    await enrichProviderCandidates({ candidates: [candidate], search, analyze });
 
     expect(order).toEqual([
       "search-start:A reviews X",
       "search-end:A reviews X",
       "analyze-start:https://review-site.com/x",
       "analyze-end:https://review-site.com/x",
-      "search-start:B reviews X",
-      "search-end:B reviews X",
-      "analyze-start:https://review-site.com/x",
-      "analyze-end:https://review-site.com/x",
     ]);
+  });
+
+  it("processes candidates concurrently, bounded by CONCURRENCY_LIMIT", async () => {
+    const candidates = Array.from({ length: 5 }, (_, i) =>
+      makeCandidate(`https://p${i}.com`, { name: `P${i}`, location: "X" })
+    );
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const search: EnrichmentSearchFn = async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return [{ result: { url: "https://review-site.com/x", title: "r" }, markdown: "md" }];
+    };
+    const analyze: AnalyzeFn = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight--;
+      return NO_TAGS;
+    };
+
+    const result = await enrichProviderCandidates({ candidates, search, analyze });
+
+    expect(maxInFlight).toBe(CONCURRENCY_LIMIT);
+    expect(result).toHaveLength(5);
+    for (const candidate of result) {
+      expect(candidate.inferred).toBeDefined();
+    }
   });
 
   it("logs and skips a candidate whose search call throws, without rejecting or dropping the candidate", async () => {

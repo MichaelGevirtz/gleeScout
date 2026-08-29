@@ -17,6 +17,20 @@ describe("TraceEventSchema", () => {
     expect(TraceEventSchema.safeParse(withDetail).success).toBe(true);
   });
 
+  it("accepts a valid event with durationMs", () => {
+    const withDuration = { ...base, durationMs: 1234 };
+    expect(TraceEventSchema.safeParse(withDuration).success).toBe(true);
+  });
+
+  it("accepts a valid event without durationMs", () => {
+    expect(TraceEventSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("rejects a negative durationMs", () => {
+    const invalid = { ...base, durationMs: -1 };
+    expect(TraceEventSchema.safeParse(invalid).success).toBe(false);
+  });
+
   it("rejects a missing step", () => {
     const { step: _step, ...rest } = base;
     expect(TraceEventSchema.safeParse(rest).success).toBe(false);

@@ -59,9 +59,16 @@ export async function generateProviderList({
   const location = coreAttributes.location;
 
   const query = buildProviderSearchQuery({ serviceCategory, location });
+
+  const discoverStartedAt = Date.now();
   const discovered = await discover({ serviceCategory, location });
+  const discoverEndedAt = Date.now();
+
   const enriched = await enrich({ candidates: discovered });
+  const enrichEndedAt = Date.now();
+
   const providers = rank({ candidates: enriched, requirements: deriveRankingRequirements(state) });
+  const rankEndedAt = Date.now();
 
   const enrichedWithSignal = enriched.filter(
     (c) => Array.isArray(c.inferred) && c.inferred.length > 0
@@ -71,19 +78,20 @@ export async function generateProviderList({
   ).length;
   const notEnriched = enriched.length - enrichedWithSignal - enrichedNoSignalFound;
 
-  const timestamp = new Date().toISOString();
   const trace: TraceEvent[] = [
     {
       step: "discover",
       summary: `Searched for "${serviceCategory}" providers in ${location}`,
       detail: { query, candidatesFound: discovered.length },
-      timestamp,
+      timestamp: new Date(discoverEndedAt).toISOString(),
+      durationMs: discoverEndedAt - discoverStartedAt,
     },
     {
       step: "enrich",
       summary: "Enriched candidates with review signal where available",
       detail: { enrichedWithSignal, enrichedNoSignalFound, notEnriched },
-      timestamp,
+      timestamp: new Date(enrichEndedAt).toISOString(),
+      durationMs: enrichEndedAt - discoverEndedAt,
     },
     {
       step: "rank",
@@ -96,13 +104,15 @@ export async function generateProviderList({
           dimensionScores: p.dimensionScores,
         })),
       },
-      timestamp,
+      timestamp: new Date(rankEndedAt).toISOString(),
+      durationMs: rankEndedAt - enrichEndedAt,
     },
     {
       step: "recommend",
       summary: `Selected top ${providers.length} provider${providers.length === 1 ? "" : "s"} to present`,
       detail: { count: providers.length },
-      timestamp,
+      timestamp: new Date(rankEndedAt).toISOString(),
+      durationMs: 0,
     },
   ];
 

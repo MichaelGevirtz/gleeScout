@@ -1562,6 +1562,125 @@ files / 340 tests green, `npm run typecheck` clean, `frontend npm test`
 has not been observed in a browser (no Playwright) — it inherits
 task-75's open manual-check follow-up.
 
+## D23 — Bounded-concurrency parallelization of discover/enrich (task-77)
+
+**Context**: a live "clown, New York" request was traced to `POST
+/conversation/:id/providers` running up to 19 fully sequential
+network/LLM round trips (`discoverProviderCandidates`'s up-to-8
+extraction calls, then `enrichProviderCandidates`'s up-to-5
+search+analyze pairs), one after another in `for` loops — a real,
+observed multi-second-to-tens-of-seconds wait, compounded by
+`TransitionScreen`'s cosmetic 3-step loading animation having no real
+progress feed to reflect it (found live, not merely inferred from
+code).
+
+**Decision**: added `backend/src/shared/concurrency.ts`'s
+`mapWithConcurrency<T, R>(items, limit, fn)` — a small worker-pool
+helper (results returned in input order regardless of completion
+order; a rejecting `fn` fails the whole pool, matching every current
+caller which already catches its own per-item errors) — and used it in
+both `discoverProviderCandidates.ts` and `enrichProviderCandidates.ts`,
+each with its own exported `CONCURRENCY_LIMIT = 3`.
+`enrichProviderCandidates.ts` splits `candidates` into the first
+`MAX_ENRICHMENT_CANDIDATES` (run through the pool) and the remainder
+(passed through unchanged, same references, same as before).
+
+**Why the limit is 3, not "as parallel as possible"**: task-08 found
+Gemini's free tier caps `gemini-3.6-flash` at **5 requests/minute**.
+Parallelizing does not reduce total Gemini call volume (still ~8
+discovery + up to 10 enrichment-phase calls per full request) — it
+only compresses the same volume into less wall-clock time, which does
+not help an already-tight per-minute budget and could make bursts
+worse. `CONCURRENCY_LIMIT = 3` was chosen to meaningfully cut
+wall-clock time (discovery's 8 extraction calls now run in ~3 batches
+instead of 8 sequential steps) without pushing simultaneous in-flight
+calls materially higher than what already runs today. This is a tuning
+constant, decided the same way `MAX_DISCOVERY_RESULTS` and
+`MAX_ENRICHMENT_CANDIDATES` were (project judgment call, not put to
+a vote each time) — see task-77 for the full reasoning.
+
+**What changed vs. the original M7/M8 sequential-by-design decisions**
+(task-15/task-20/task-25): those tasks justified strictly sequential
+execution as the design. That reasoning is now superseded for
+*within-phase, across-candidate* execution — the rationale comments in
+both files were updated in place rather than left contradicting the
+code. Per-candidate error isolation (catch, log, skip/pass-through)
+is unchanged and still verified by tests; only *how many* candidates'
+work can be in flight at once changed.
+
+**Test changes**: two existing tests that asserted strict one-at-a-time
+ordering (`discoverProviderCandidates.test.ts`,
+`enrichProviderCandidates.test.ts`) were rewritten to assert *bounded*
+concurrency (max simultaneous in-flight calls == `CONCURRENCY_LIMIT`)
+instead — a deliberate reversal of test intent, not a regression.
+`enrichProviderCandidates.test.ts` also gained a narrower test proving
+search-then-analyze ordering still holds *within* one candidate's own
+pipeline, since the removed test had been covering both properties at
+once.
+
+**Assignment alignment**: RECOMMENDATION, supporting the named BONUS
+item "Parallel provider research" and the DESIGN.md Optimizations
+section's "Parallelizing searches" / "Cost or latency optimizations"
+categories (`docs/Home Assignment.pdf`, pp. 6, 8).
+
+**Status**: ACCEPTED and implemented (task-77). `backend npm test` 39
+files / 346 tests green (5 new in `shared/concurrency.test.ts`, 2
+existing ordering tests rewritten), `npm run typecheck` and `npm run
+build` both clean. No live-server before/after latency measurement
+was taken (no real `GEMINI_API_KEY`/`FIRECRAWL_API_KEY` calls were
+made in this session) — the improvement is architectural (fewer
+sequential round trips) rather than benchmark-verified.
+
+## D24 — Real per-step timing in generateProviderList's trace events (task-78)
+
+**Context**: while investigating the same slow "clown, New York"
+request that motivated D23, the M13 agent trace (task-70) turned out
+unable to help diagnose it: `generateProviderList.ts` computed one
+`const timestamp = new Date().toISOString()` *after* `discover`,
+`enrich`, and `rank` had all already resolved, and reused that single
+value for all four trace events. The trace could show that discovery,
+enrichment, and ranking happened, but not which one took long — the
+exact question "why was this slow" needs answered.
+
+**Decision**: `TraceEventSchema` (`backend/src/domain/trace.ts`)
+gained an optional `durationMs: number` field (`.nonnegative()`,
+schema-validated). `generateProviderList.ts` now captures `Date.now()`
+around each of the three real calls it makes (`discover`, `enrich`,
+`rank`) and stamps each event with its own step's actual completion
+time and wall-clock duration, instead of one shared value. The
+`recommend` event (which does no real work of its own — it only
+summarizes the already-computed ranked list) gets `durationMs: 0` and
+a `timestamp` equal to `rank`'s completion, rather than inventing a
+fictitious duration for work that didn't happen.
+
+**Why optional rather than required**: backward compatibility — no
+existing consumer of `TraceEvent` (the frontend trace screen,
+`traceStore.ts`) reads `durationMs` yet, and making it required would
+have forced every call site (including `selectProvider.ts`'s
+still-untouched trace events, task-71) to supply it in the same pass,
+which was explicitly out of scope for this task.
+
+**Why `generateProviderList.ts` only, not `selectProvider.ts` too**:
+kept the task small and focused on the exact function that was
+diagnosed live as slow. `selectProvider.ts`'s trace events (task-71)
+likely have the same one-shared-timestamp gap, but that's a separate,
+equally small follow-up — not bundled in here per this project's task-
+sizing discipline (a clean single-function fix over one task that
+touches two unrelated orchestrators).
+
+**Assignment alignment**: RECOMMENDATION, a targeted correction to the
+already-implemented BONUS ("An agent trace/debug view showing how the
+recommendation was produced," `docs/Home Assignment.pdf` p.8) rather
+than new scope — the trace existed but couldn't actually answer "how
+long," which is central to "how the recommendation was produced" when
+the question at hand is latency.
+
+**Status**: ACCEPTED and implemented (task-78). `backend npm test` 39
+files / 350 tests green (4 new in `domain/trace.test.ts`, 1 new in
+`recommendation/generateProviderList.test.ts`), `npm run typecheck`
+and `npm run build` both clean. Not yet observed against a live
+request with real API keys — same caveat as D23.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

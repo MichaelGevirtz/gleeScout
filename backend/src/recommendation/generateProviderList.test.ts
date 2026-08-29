@@ -127,6 +127,51 @@ describe("generateProviderList", () => {
     expect(recommendEvent?.detail).toEqual({ count: 1 });
   });
 
+  it("gives each trace event real per-step timing instead of one shared timestamp", async () => {
+    const discover: DiscoverFn = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return [candidate("https://a.example")];
+    };
+    const enrich: EnrichFn = async ({ candidates }) => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return candidates;
+    };
+    const rank: RankFn = ({ candidates }) =>
+      candidates.map((c) => ({
+        candidate: c,
+        score: 1,
+        dimensionScores: {
+          requirementMatch: null,
+          geoFit: null,
+          priceFit: null,
+          reputation: null,
+          evidenceQuality: null,
+        },
+        explanation: "test",
+      }));
+
+    const { trace } = await generateProviderList({ state: readyState(), discover, enrich, rank });
+
+    const discoverEvent = trace.find((e) => e.step === "discover")!;
+    const enrichEvent = trace.find((e) => e.step === "enrich")!;
+    const rankEvent = trace.find((e) => e.step === "rank")!;
+    const recommendEvent = trace.find((e) => e.step === "recommend")!;
+
+    for (const event of trace) {
+      expect(typeof event.durationMs).toBe("number");
+      expect(event.durationMs!).toBeGreaterThanOrEqual(0);
+    }
+
+    expect(discoverEvent.timestamp <= enrichEvent.timestamp).toBe(true);
+    expect(enrichEvent.timestamp <= rankEvent.timestamp).toBe(true);
+    expect(rankEvent.timestamp).toBe(recommendEvent.timestamp);
+    expect(discoverEvent.timestamp).not.toBe(enrichEvent.timestamp);
+
+    expect(discoverEvent.durationMs!).toBeGreaterThanOrEqual(15);
+    expect(enrichEvent.durationMs!).toBeGreaterThanOrEqual(5);
+    expect(recommendEvent.durationMs).toBe(0);
+  });
+
   it("throws a clear error and never calls discover/enrich/rank when serviceCategory is null", async () => {
     const state = readyState({ serviceCategory: null });
     const discover = vi.fn();

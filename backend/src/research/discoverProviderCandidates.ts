@@ -5,6 +5,7 @@ import { assembleCandidate, dedupByUrl, MAX_DISCOVERY_RESULTS } from "./assemble
 import { extractProviderFacts } from "../llm/providerExtraction.js";
 import type { ProviderExtractionResult } from "../llm/providerExtraction.js";
 import type { ProviderCandidate } from "../domain/provider.js";
+import { mapWithConcurrency } from "../shared/concurrency.js";
 
 export type SearchFn = (params: { query: string; limit: number }) => Promise<SearchedPage[]>;
 
@@ -12,6 +13,15 @@ export type ExtractFn = (params: {
   url: string;
   markdown: string;
 }) => Promise<ProviderExtractionResult>;
+
+/**
+ * Bounded, not unlimited: Gemini's free tier caps `gemini-3.6-flash`
+ * at 5 requests/minute (found empirically during task-08's eval run).
+ * Parallelizing extraction cuts wall-clock time but does not reduce
+ * total call volume, so this stays conservative rather than running
+ * all `MAX_DISCOVERY_RESULTS` extractions at once.
+ */
+export const CONCURRENCY_LIMIT = 3;
 
 export interface DiscoverProviderCandidatesParams {
   serviceCategory: string;
@@ -38,22 +48,25 @@ export async function discoverProviderCandidates({
     }
   }
   const dedupedResults = dedupByUrl(pages.map((page) => page.result));
+  const scrapedResults = dedupedResults.filter(
+    (result) => (markdownByUrl.get(result.url) ?? null) !== null
+  );
 
-  const candidates: ProviderCandidate[] = [];
-  for (const result of dedupedResults) {
-    const markdown = markdownByUrl.get(result.url) ?? null;
-    if (markdown === null) continue;
-
-    try {
-      const extraction = await extract({ url: result.url, markdown });
-      const retrievedAt = new Date().toISOString();
-      const candidate = assembleCandidate({ url: result.url, extraction, retrievedAt });
-      if (candidate !== null) candidates.push(candidate);
-    } catch (error) {
-      console.error(`Extraction failed for candidate ${result.url}:`, error);
-      continue;
+  const assembled = await mapWithConcurrency(
+    scrapedResults,
+    CONCURRENCY_LIMIT,
+    async (result): Promise<ProviderCandidate | null> => {
+      const markdown = markdownByUrl.get(result.url)!;
+      try {
+        const extraction = await extract({ url: result.url, markdown });
+        const retrievedAt = new Date().toISOString();
+        return assembleCandidate({ url: result.url, extraction, retrievedAt });
+      } catch (error) {
+        console.error(`Extraction failed for candidate ${result.url}:`, error);
+        return null;
+      }
     }
-  }
+  );
 
-  return candidates;
+  return assembled.filter((candidate): candidate is ProviderCandidate => candidate !== null);
 }

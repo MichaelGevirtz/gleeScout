@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   discoverProviderCandidates,
+  CONCURRENCY_LIMIT,
   type ExtractFn,
   type SearchFn,
 } from "./discoverProviderCandidates.js";
@@ -23,18 +24,23 @@ const ALL_NULL_EXTRACTION: ProviderExtractionResult = {
 };
 
 describe("discoverProviderCandidates", () => {
-  it("calls extract sequentially, not concurrently, once per distinct URL", async () => {
-    const order: string[] = [];
+  it("calls extract for each distinct URL, bounded by CONCURRENCY_LIMIT concurrent calls, starting calls in input order", async () => {
     const pages: SearchedPage[] = [
       { result: { url: "https://a.com", title: "A" }, markdown: "md-a" },
       { result: { url: "https://b.com", title: "B" }, markdown: "md-b" },
       { result: { url: "https://c.com", title: "C" }, markdown: "md-c" },
+      { result: { url: "https://d.com", title: "D" }, markdown: "md-d" },
     ];
     const search: SearchFn = async () => pages;
+    const calledUrls: string[] = [];
+    let inFlight = 0;
+    let maxInFlight = 0;
     const extract: ExtractFn = async ({ url }) => {
-      order.push(`${url}-start`);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      order.push(`${url}-end`);
+      calledUrls.push(url);
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight--;
       return { ...ALL_NULL_EXTRACTION, pricing: "$1" };
     };
 
@@ -45,15 +51,14 @@ describe("discoverProviderCandidates", () => {
       extract,
     });
 
-    expect(order).toEqual([
-      "https://a.com-start",
-      "https://a.com-end",
-      "https://b.com-start",
-      "https://b.com-end",
-      "https://c.com-start",
-      "https://c.com-end",
+    expect(calledUrls).toEqual([
+      "https://a.com",
+      "https://b.com",
+      "https://c.com",
+      "https://d.com",
     ]);
-    expect(result).toHaveLength(3);
+    expect(maxInFlight).toBe(CONCURRENCY_LIMIT);
+    expect(result).toHaveLength(4);
   });
 
   it("skips a result with markdown: null without calling extract, and it doesn't appear in output", async () => {
