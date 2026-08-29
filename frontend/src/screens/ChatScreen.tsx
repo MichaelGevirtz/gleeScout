@@ -15,6 +15,11 @@ interface KnownField {
 interface PendingBubble {
   text: string;
   status: "pending" | "failed";
+  failureMessage?: string;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Failed to send.";
 }
 
 // "What I know so far" chips: one per non-null/non-undefined field,
@@ -81,8 +86,8 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
       try {
         await onSend(text);
         setPendingBubble(null);
-      } catch {
-        setPendingBubble({ text, status: "failed" });
+      } catch (error) {
+        setPendingBubble({ text, status: "failed", failureMessage: errorMessage(error) });
       }
     },
     [onSend],
@@ -136,7 +141,9 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
             )}
             {pendingBubble.status === "failed" && (
               <View style={styles.failedRow}>
-                <Text style={styles.failedLabel}>Failed to send</Text>
+                <Text testID="chat-failed-message" style={styles.failedLabel}>
+                  {pendingBubble.failureMessage ?? "Failed to send."}
+                </Text>
                 <Pressable testID="chat-retry" onPress={handleRetry}>
                   <Text style={styles.retryText}>Retry</Text>
                 </Pressable>

@@ -956,6 +956,77 @@
   no regressions. Manual browser reload check left to the user (no
   browser automation available this session).
 
+- **Task 64 — Desktop/wide-screen Chat layout fix** (DONE, see
+  `tasks/completed/task-64-desktop-chat-layout.md`): bug-report fix,
+  direct first-person instruction. Root cause: the split-pane branch
+  in `frontend/src/App.tsx` only activates once `providers !== null`,
+  so the Chat screen — active for the entire requirement-gathering
+  phase — always fell into the plain fallback branch, whose `content`
+  style has no `maxWidth`/centering, stretching the transcript, chip
+  bar, and input row edge-to-edge on wide viewports (message bubbles
+  ballooning past readable width). Fixed with a new, Chat-only desktop
+  wrapper: when `isDesktop && screen === "chat"` (i.e. exactly the
+  `providers === null` case), `content` renders inside a centered
+  `#f3f4f6`-backdrop, ~800px-max-width white card with a `#e5e7eb`
+  border and rounded corners — reusing the neutral chrome palette
+  `ContextPanel.tsx` already established, mirroring the existing
+  `rightPaneInner` max-width pattern. `ChatScreen.tsx` itself is
+  completely untouched (zero risk to its own tests); the split-pane
+  branch (Recommendations/Provider Details/Simulated QA, and Chat
+  reopened via `ContextPanel` once `providers` exists) is unaffected —
+  confirmed via three separate real-browser Playwright checks (see
+  outcome section of the task file) that the split-pane layout is
+  pixel-identical to before, and that reopened chat still takes that
+  branch rather than the new card. Design/width (~800px, revised up
+  from an initially-proposed 720px per direct user instruction) was
+  approved explicitly by the user before implementation, per this
+  project's approval-gate convention. `npm test` 13 suites / 101 tests
+  passing (unchanged — no test needed updating), `npx tsc --noEmit`
+  clean. `memory-bank/decisions.md` D19 given a dated addendum
+  correcting its original "initial gathering stays full-width" clause
+  and recording the resulting three-state desktop layout model.
+
+- **M16 error-handling audit + tasks 65-68** (all DONE, see
+  `tasks/completed/task-65-rate-limit-error-classification.md` through
+  `task-68-recommendations-empty-state.md`): a bounded, read-only audit
+  of M3/M4/M7/M8/M12's existing Gemini/Firecrawl/empty-result/HTTP
+  error paths (per the roadmap's M16 row — embedded within those
+  milestones, not a fresh design) found PASS WITH GAPS: every path
+  already failed safely, all findings were observability/messaging
+  polish, none were assignment-required. A direct user bug report
+  (screenshot: a failed chat send always showed the hardcoded "Failed
+  to send" with no real cause) drove four small follow-up tasks:
+  - **Task 65**: `GeminiRateLimitError`/`FirecrawlRateLimitError`
+    (`backend/src/llm/geminiClient.ts`,
+    `backend/src/research/firecrawlProvider.ts`) detect a 429 from
+    each SDK (Gemini's exported `ApiError.status`; Firecrawl's
+    unexported `SdkError` duck-typed via `status`) and all three action
+    routes in `server.ts` now return `429` with a clear "You've hit the
+    rate limit..." message ahead of the existing 502/500 branches. One
+    implementation correction during validation: the rate-limit check
+    initially wrapped the wrong call site (inside
+    `createDefaultClient()`, invisible to any injected/test client) —
+    moved to wrap `activeClient.search(...)` in `searchProviderPages`
+    itself once the new test caught it.
+  - **Task 66**: the actual reported bug — `ChatScreen.tsx`'s
+    `attemptSend` catch block discarded the caught error completely.
+    Now captures and renders the real `error.message` (same pattern as
+    `App.tsx`'s existing `errorMessage()`), so task-65's rate-limit
+    message (or any other real failure message) is what the user
+    actually sees, not a generic hardcoded string.
+  - **Task 67**: `discoverProviderCandidates.ts`'s per-candidate catch
+    block now logs via `console.error`, mirroring
+    `enrichProviderCandidates.ts`'s already-shipped pattern (closes a
+    gap `decisions.md` had already recorded and deliberately deferred
+    at task-25). Added the previously-missing zero-search-results test.
+  - **Task 68**: `RecommendationsScreen.tsx` now shows an explicit "no
+    matching providers found" message for a legitimate `providers: []`
+    response, instead of a near-blank screen.
+  `backend npm run build` clean, `backend npm test` 310/310 passing (16
+  new); `frontend npx tsc --noEmit` clean, `frontend npm test` 103/103
+  passing (4 new — 2 wired to task-65's rate-limit copy). No
+  regressions. See `decisions.md` D20 for full rationale.
+
 ## Current State
 
 - `docs/Home Assignment.pdf` in place.

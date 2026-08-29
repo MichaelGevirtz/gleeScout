@@ -1296,6 +1296,117 @@ Part 1–6 requirement. Confirmed 2026-08-29, before any frontend task
 file was written or any code changed. Next step is a
 `piv-task-management` task proposal for implementation.
 
+**Addendum (task-64, 2026-08-29) — Chat's "initial requirement
+gathering stays single-pane/full-width" clause above is corrected**:
+tasks 55-58 implemented that clause literally, but at wide desktop
+widths it produced a visibly stretched, unbounded Chat screen (full
+window width, no max-width, message bubbles ballooning to ~1400px+) —
+reported directly by the user as a UX bug. Fixed in task-64 with a
+**second, independent desktop treatment scoped only to Chat**: while
+`providers === null` (i.e. before the split-pane above ever applies),
+Chat now renders inside a centered, ~800px-max-width bordered card on
+a neutral gray backdrop, active only at `isDesktop` widths (≥1024px);
+below that breakpoint, Chat is still genuinely full-bleed/unchanged.
+This is deliberately **not** the ContextPanel/split-pane treatment
+(no left rail during gathering — confirmed with the user as the right
+call, since Chat's own "what I know so far" chip bar already serves
+that role inline, and adding a sidebar during pure conversation would
+edge toward redesigning the already-frozen M14 chat-first interaction
+rather than fixing a layout bug). `ChatScreen.tsx` itself is
+unmodified — the card lives entirely in `App.tsx`, mirroring the
+existing `rightPaneInner` max-width pattern used by the split-pane
+branch. Net effect: three desktop states exist for the app's content
+area, not two — (1) `!isDesktop`: full-bleed everywhere, unchanged;
+(2) `isDesktop && screen === "chat" && providers === null`: new
+centered chat card; (3) `isDesktop && providers !== null`: original
+ContextPanel split-pane, unchanged for every screen it already
+covered.
+
+## D20 — M16 error-handling audit findings, and rate-limit-specific error classification (tasks 65-68)
+
+**Context**: `docs/Home Assignment.pdf`'s Technical Expectations list
+"error handling" explicitly; the roadmap's M16 row states this is
+embedded within M3/M4/M7/M8/M12 as each was built, not a separate
+milestone to design fresh. A bounded, read-only audit was run against
+the already-shipped implementation of those five milestones (no code
+changed during the audit itself) to confirm that design held up in
+practice, followed by a small, separately-approved implementation pass
+addressing what the audit and a direct user bug report actually found.
+
+**Audit verdict**: PASS WITH GAPS. Every audited Gemini/Firecrawl/
+empty-result path already failed safely (no crash, no leaked internal
+detail, no lost session state, correct per-provider batch resilience
+in M8 vs. correct fail-loud in M10/M11 per D14/D15). All findings were
+observability/messaging/UX polish, not correctness breaks, and none
+were required by the assignment.
+
+**Findings actually acted on (tasks 65-68)**:
+1. **Rate-limit-specific error classification (task-65)** — new
+   `GeminiRateLimitError` (`backend/src/llm/geminiClient.ts`) and
+   `FirecrawlRateLimitError` (`backend/src/research/firecrawlProvider.ts`)
+   classes. Gemini's SDK exports a real `ApiError` class with a numeric
+   `status`, checked via `instanceof ApiError && status === 429`
+   (verified live against `@google/genai`'s type declarations, same
+   D2a precedent of confirming SDK shapes rather than assuming them).
+   Firecrawl's equivalent (`SdkError`) is **not exported** from
+   `@mendable/firecrawl-js`, so its 429 is duck-typed (`"status" in
+   error && error.status === 429`) rather than `instanceof`-checked.
+   All three action routes (`/message`, `/providers`,
+   `/providers/select`) in `server.ts` now return `429` with a shared,
+   clear message ("You've hit the rate limit — please wait a moment
+   and try again.") when either class propagates, checked *before* the
+   existing config/parse/validation → 502 branch. Deliberately scoped
+   to 429 only — a general "wrap every possible SDK failure into its
+   own class" mechanism was explicitly considered and rejected as
+   low-value/not-worth-it (this is the one failure mode a user is
+   actually likely to hit and immediately retry into, per the direct
+   user report that motivated this task; every other raw SDK failure
+   still correctly falls through to the pre-existing generic 500,
+   which already fails safely).
+2. **`ChatScreen.tsx` was discarding the real error entirely
+   (task-66)** — the actual, user-reported bug (screenshot: a failed
+   chat send always showed the hardcoded literal "Failed to send," with
+   no indication of cause, even once (1) above existed on the backend).
+   `attemptSend`'s catch block never referenced the caught error at
+   all. Fixed by capturing `error instanceof Error ? error.message :
+   "Failed to send."` (mirroring `App.tsx`'s pre-existing
+   `errorMessage()` pattern) and rendering it in place of the literal
+   string. This is the fix that actually makes (1)'s clear rate-limit
+   message reach the user for a chat-send failure specifically —
+   without it, the backend classification alone would have had no
+   visible effect on the screen the user reported the bug from.
+3. **M7 discovery per-candidate failures now logged (task-67)** —
+   closes an already-recorded but previously-deliberately-deferred gap
+   (see the "M7 real-API validation" Finding 1 above): task-25 (M8)
+   added `console.error` logging to `enrichProviderCandidates.ts`'s
+   per-candidate catch block but explicitly left
+   `discoverProviderCandidates.ts`'s identical-shaped catch block
+   unlogged. Mirrored the same one-line `console.error` call; added the
+   previously-missing zero-search-results test case at the same time.
+4. **`RecommendationsScreen.tsx` empty-state (task-68)** — a
+   legitimate `200 { providers: [] }` response (already observed as a
+   real, not hypothetical, outcome per the M7 real-API validation's
+   Finding 3 on discovery-quality variance by category/location)
+   previously rendered as a near-blank screen with only the decorative
+   sort row. Added an explicit "no matching providers found" message.
+
+**Rationale**: (1)+(2) directly answer a first-person user bug report
+in this session, not a speculative hardening pass. (3)+(4) are the
+audit's own lowest-risk, already-approved-in-spirit recommendations
+(mirroring an identical pattern already shipped elsewhere in the
+codebase), not new design. The audit's remaining, lower-priority
+recommendation (wrapping every non-429 raw SDK failure into its own
+distinguishable class) was explicitly left undone — both fallback
+branches (429 and generic 500) already fail safely, and building a
+general classification mechanism for failure modes with no reported
+real-world impact would be exactly the kind of ahead-of-need work this
+project's existing precedent (D6, D9, D13f) already argues against.
+
+**Status**: PROJECT DECISION + bug fix, confirmed and implemented
+2026-08-29 (tasks 65-68, all `DONE`). No assignment requirement was
+unmet before this work and none is newly satisfied by it — this is
+error-handling *quality*, not new *scope*.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

@@ -4,8 +4,15 @@ import { z } from "zod";
 import { createSession, getSession, updateSession } from "./store/sessionStore.js";
 import { orchestrateMessage, type OrchestrateMessageParams } from "./conversation/orchestrateMessage.js";
 import { runSerialized } from "./conversation/sessionQueue.js";
-import { GeminiConfigError, GeminiParseError, GeminiValidationError } from "./llm/geminiClient.js";
-import { FirecrawlConfigError } from "./research/firecrawlProvider.js";
+import {
+  GeminiConfigError,
+  GeminiParseError,
+  GeminiRateLimitError,
+  GeminiValidationError,
+} from "./llm/geminiClient.js";
+import { FirecrawlConfigError, FirecrawlRateLimitError } from "./research/firecrawlProvider.js";
+
+const RATE_LIMIT_MESSAGE = "You've hit the rate limit — please wait a moment and try again.";
 import {
   generateProviderList,
   type GenerateProviderListParams,
@@ -93,6 +100,11 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
       }
       return { state: nextState };
     } catch (error) {
+      if (error instanceof GeminiRateLimitError) {
+        app.log.error(error);
+        reply.code(429);
+        return { error: RATE_LIMIT_MESSAGE };
+      }
       if (
         error instanceof GeminiConfigError ||
         error instanceof GeminiParseError ||
@@ -123,6 +135,11 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
       const providers = await generateList({ state });
       return { providers };
     } catch (error) {
+      if (error instanceof GeminiRateLimitError || error instanceof FirecrawlRateLimitError) {
+        app.log.error(error);
+        reply.code(429);
+        return { error: RATE_LIMIT_MESSAGE };
+      }
       if (
         error instanceof GeminiConfigError ||
         error instanceof GeminiParseError ||
@@ -162,6 +179,11 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
       const answers = await select({ candidate: parsedBody.data.candidate, state });
       return { answers };
     } catch (error) {
+      if (error instanceof GeminiRateLimitError) {
+        app.log.error(error);
+        reply.code(429);
+        return { error: RATE_LIMIT_MESSAGE };
+      }
       if (
         error instanceof GeminiConfigError ||
         error instanceof GeminiParseError ||

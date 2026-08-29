@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   discoverProviderCandidates,
   type ExtractFn,
@@ -100,6 +100,47 @@ describe("discoverProviderCandidates", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].url).toBe("https://b.com");
+  });
+
+  it("logs and skips a candidate whose extract call throws, without rejecting or dropping the rest", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const pages: SearchedPage[] = [
+      { result: { url: "https://a.com", title: "A" }, markdown: "md-a" },
+      { result: { url: "https://b.com", title: "B" }, markdown: "md-b" },
+    ];
+    const search: SearchFn = async () => pages;
+    const extract: ExtractFn = async ({ url }) => {
+      if (url === "https://a.com") throw new Error("gemini failed");
+      return { ...ALL_NULL_EXTRACTION, pricing: "$50" };
+    };
+
+    const result = await discoverProviderCandidates({
+      serviceCategory: "x",
+      location: "y",
+      search,
+      extract,
+    });
+
+    expect(result).toHaveLength(1);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("https://a.com"),
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("returns an empty array without error when search resolves with zero results", async () => {
+    const search: SearchFn = async () => [];
+    const extract: ExtractFn = async () => ALL_NULL_EXTRACTION;
+
+    const result = await discoverProviderCandidates({
+      serviceCategory: "underwater basket weaving",
+      location: "nowhere",
+      search,
+      extract,
+    });
+
+    expect(result).toEqual([]);
   });
 
   it("keeps a candidate when name is null but another field is populated; other candidates unaffected", async () => {

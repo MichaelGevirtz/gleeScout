@@ -40,6 +40,18 @@ export interface RecommendationsScreenProps {
 }
 
 export function RecommendationsScreen({ providers, onSelectRow }: RecommendationsScreenProps) {
+  if (providers.length === 0) {
+    return (
+      <ScrollView testID="recommendations-screen" style={styles.container}>
+        <View testID="recommendations-empty" style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            No matching providers found. Try adjusting your requirements and searching again.
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView testID="recommendations-screen" style={styles.container}>
       {/* Decorative only — real client-side sort is deferred (Open Decision #4, m14-ux-spec.md). */}
@@ -91,6 +103,15 @@ const styles = StyleSheet.create({
   },
   sortLabel: {
     fontWeight: "600",
+  },
+  emptyState: {
+    padding: 24,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 14,
   },
   row: {
     padding: 12,

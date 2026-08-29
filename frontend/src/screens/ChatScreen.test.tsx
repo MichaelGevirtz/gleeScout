@@ -60,8 +60,12 @@ describe("ChatScreen sending", () => {
     expect(screen.queryByTestId("chat-pending-message")).toBeNull();
   });
 
-  it("a rejected onSend marks the bubble as failed, keeps it visible, and retry re-sends the same text", async () => {
-    const onSend = jest.fn().mockRejectedValueOnce(new Error("upstream failed"));
+  it("a rejected onSend marks the bubble as failed, shows the real error message, keeps it visible, and retry re-sends the same text", async () => {
+    const onSend = jest
+      .fn()
+      .mockRejectedValueOnce(
+        new Error("You've hit the rate limit — please wait a moment and try again.")
+      );
     await render(<ChatScreen state={baseState()} onSend={onSend} />);
 
     await fireEvent.changeText(screen.getByTestId("chat-input"), "Hello there");
@@ -72,7 +76,9 @@ describe("ChatScreen sending", () => {
     // Transcript/bubble is not cleared — the failed attempt is still visible.
     expect(screen.getByTestId("chat-pending-message")).toBeTruthy();
     expect(screen.getByText("Hello there")).toBeTruthy();
-    expect(screen.getByText("Failed to send")).toBeTruthy();
+    expect(screen.getByTestId("chat-failed-message")).toHaveTextContent(
+      "You've hit the rate limit — please wait a moment and try again."
+    );
     expect(screen.getByTestId("chat-retry")).toBeTruthy();
 
     onSend.mockResolvedValueOnce(baseState());
@@ -83,6 +89,18 @@ describe("ChatScreen sending", () => {
     expect(onSend).toHaveBeenCalledTimes(2);
     expect(onSend).toHaveBeenNthCalledWith(2, "Hello there");
     expect(screen.queryByTestId("chat-pending-message")).toBeNull();
+  });
+
+  it("a rejected onSend with a non-Error throw falls back to a generic failed message", async () => {
+    const onSend = jest.fn().mockRejectedValueOnce("some non-Error rejection");
+    await render(<ChatScreen state={baseState()} onSend={onSend} />);
+
+    await fireEvent.changeText(screen.getByTestId("chat-input"), "Hello there");
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId("chat-send"));
+    });
+
+    expect(screen.getByTestId("chat-failed-message")).toHaveTextContent("Failed to send.");
   });
 });
 

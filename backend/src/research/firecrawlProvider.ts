@@ -8,6 +8,22 @@ export interface SearchedPage {
 }
 
 export class FirecrawlConfigError extends Error {}
+export class FirecrawlRateLimitError extends Error {}
+
+/**
+ * The Firecrawl SDK's own rate-limit error class (`SdkError`, with a
+ * numeric `status`) is not exported from `@mendable/firecrawl-js` (verified
+ * against the installed package's type declarations, same D2a-precedent
+ * check as the Gemini SDK) — duck-typed here instead of `instanceof`-checked.
+ */
+function isRateLimitError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    (error as { status: unknown }).status === 429
+  );
+}
 
 /**
  * Minimal shape this module needs from the Firecrawl SDK, kept separate
@@ -94,7 +110,18 @@ export async function searchProviderPages({
   client,
 }: SearchProviderPagesParams): Promise<SearchedPage[]> {
   const activeClient = client ?? createDefaultClient();
-  const { results } = await activeClient.search({ query, limit });
+
+  let results: FirecrawlSearchResultItem[];
+  try {
+    ({ results } = await activeClient.search({ query, limit }));
+  } catch (error) {
+    if (isRateLimitError(error)) {
+      throw new FirecrawlRateLimitError(
+        "Firecrawl API rate limit exceeded. Please wait a moment and try again."
+      );
+    }
+    throw error;
+  }
 
   return results.map((item) => ({
     result: {

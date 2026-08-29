@@ -5,8 +5,8 @@ import {
   type OrchestrateMessageFn,
   type SelectProviderFn,
 } from "./server.js";
-import { GeminiValidationError } from "./llm/geminiClient.js";
-import { FirecrawlConfigError } from "./research/firecrawlProvider.js";
+import { GeminiRateLimitError, GeminiValidationError } from "./llm/geminiClient.js";
+import { FirecrawlConfigError, FirecrawlRateLimitError } from "./research/firecrawlProvider.js";
 import { createInitialState, type ConversationState } from "./domain/conversation.js";
 import type { ProviderCandidate } from "./domain/provider.js";
 import type { Simulated } from "./domain/evidence.js";
@@ -203,6 +203,24 @@ describe("POST /conversation/:id/message", () => {
 
     expect(response.statusCode).toBe(500);
     expect(response.json().error).not.toContain("unexpected internal failure detail");
+  });
+
+  it("returns 429 with a clear rate-limit message when orchestrate rejects with a GeminiRateLimitError", async () => {
+    const orchestrate: OrchestrateMessageFn = async () => {
+      throw new GeminiRateLimitError("Gemini API rate limit exceeded. Please wait a moment and try again.");
+    };
+    const app = buildServer({ orchestrate });
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const { sessionId } = created.json();
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/conversation/${sessionId}/message`,
+      payload: { message: "hi" },
+    });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.json().error).toMatch(/rate limit/i);
   });
 
   it("D11 same-session scenario: two concurrent messages to the same session don't lose either contribution", async () => {
@@ -415,6 +433,26 @@ describe("POST /conversation/:id/providers", () => {
     expect(response.statusCode).toBe(502);
   });
 
+  it("returns 429 with a clear rate-limit message when generateList rejects with a FirecrawlRateLimitError", async () => {
+    const orchestrate = async ({ state }: { state: ConversationState }) => readyState(state.sessionId);
+    const generateList: GenerateProviderListFn = async () => {
+      throw new FirecrawlRateLimitError("Firecrawl API rate limit exceeded. Please wait a moment and try again.");
+    };
+    const app = buildServer({ orchestrate, generateList });
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const sessionId = created.json().sessionId;
+    await app.inject({
+      method: "POST",
+      url: `/conversation/${sessionId}/message`,
+      payload: { message: "anything" },
+    });
+
+    const response = await app.inject({ method: "POST", url: `/conversation/${sessionId}/providers` });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.json().error).toMatch(/rate limit/i);
+  });
+
   it("returns 500 with a generic body when generateList rejects with an unrelated error", async () => {
     const orchestrate = async ({ state }: { state: ConversationState }) => readyState(state.sessionId);
     const generateList: GenerateProviderListFn = async () => {
@@ -515,6 +553,24 @@ describe("POST /conversation/:id/providers/select", () => {
 
     expect(response.statusCode).toBe(502);
     expect(response.json().error).not.toContain("some internal detail");
+  });
+
+  it("returns 429 with a clear rate-limit message when selectProvider rejects with a GeminiRateLimitError", async () => {
+    const selectProviderFn: SelectProviderFn = async () => {
+      throw new GeminiRateLimitError("Gemini API rate limit exceeded. Please wait a moment and try again.");
+    };
+    const app = buildServer({ selectProvider: selectProviderFn });
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const { sessionId } = created.json();
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/conversation/${sessionId}/providers/select`,
+      payload: { candidate: validCandidate },
+    });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.json().error).toMatch(/rate limit/i);
   });
 
   it("returns 500 with a generic body when selectProvider rejects with an unrelated error", async () => {

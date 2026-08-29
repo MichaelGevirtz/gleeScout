@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { ApiError } from "@google/genai";
 import {
   GeminiConfigError,
   GeminiParseError,
+  GeminiRateLimitError,
   GeminiValidationError,
   generateStructuredJson,
   type GeminiClient,
@@ -71,5 +73,33 @@ describe("generateStructuredJson", () => {
     await expect(
       generateStructuredJson({ schema: testSchema, prompt: "hello", client })
     ).rejects.toBeInstanceOf(GeminiParseError);
+  });
+
+  it("throws a GeminiRateLimitError when the SDK rejects with an ApiError status 429", async () => {
+    const client: GeminiClient = {
+      models: {
+        generateContent: async () => {
+          throw new ApiError({ message: "Resource exhausted", status: 429 });
+        },
+      },
+    };
+
+    await expect(
+      generateStructuredJson({ schema: testSchema, prompt: "hello", client })
+    ).rejects.toBeInstanceOf(GeminiRateLimitError);
+  });
+
+  it("propagates a non-429 ApiError unchanged, not as a rate-limit error", async () => {
+    const client: GeminiClient = {
+      models: {
+        generateContent: async () => {
+          throw new ApiError({ message: "Service unavailable", status: 503 });
+        },
+      },
+    };
+
+    await expect(
+      generateStructuredJson({ schema: testSchema, prompt: "hello", client })
+    ).rejects.not.toBeInstanceOf(GeminiRateLimitError);
   });
 });

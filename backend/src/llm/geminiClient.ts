@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI } from "@google/genai";
 import type { ZodType } from "zod";
 
 const DEFAULT_MODEL = "gemini-3.6-flash";
@@ -24,6 +24,7 @@ export interface GeminiClient {
 export class GeminiConfigError extends Error {}
 export class GeminiParseError extends Error {}
 export class GeminiValidationError extends Error {}
+export class GeminiRateLimitError extends Error {}
 
 function createDefaultClient(): GeminiClient {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -52,14 +53,24 @@ export async function generateStructuredJson<T>({
   const activeClient = client ?? createDefaultClient();
   const model = process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
 
-  const response = await activeClient.models.generateContent({
-    model,
-    contents: prompt,
-    config: {
-      systemInstruction,
-      responseMimeType: "application/json",
-    },
-  });
+  let response: { text?: string };
+  try {
+    response = await activeClient.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+      },
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 429) {
+      throw new GeminiRateLimitError(
+        "Gemini API rate limit exceeded. Please wait a moment and try again."
+      );
+    }
+    throw error;
+  }
 
   const text = response.text;
   if (text === undefined) {

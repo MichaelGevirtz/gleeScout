@@ -165,6 +165,13 @@ than being written after the fact.
   be a poor fit for React Native's own package format and was swapped
   for Jest, the standard tooling choice for Expo/React Native projects,
   once that mismatch was confirmed rather than fought further.
+- A rate limit hit on the underlying LLM or search API is detected and
+  surfaced to the end user as a specific, plain-language message,
+  rather than the same generic failure message used for every other
+  kind of error — the one failure mode a user is likely to actually
+  hit (and retry into again immediately) gets to say what happened,
+  without building a general system for classifying every possible
+  upstream failure.
 
 ## Optimizations
 
@@ -201,8 +208,8 @@ are built out. Intended direction: persistent provider profiles
 communication in place of simulation, and confidence/observability
 around extracted data.
 
-- A failure enriching one provider is now logged rather than silently
-  swallowed, so a partial-failure batch is visible to whoever's
-  watching the process rather than looking identical to a fully
-  successful one. No retry/backoff yet — that's a real production gap
-  this only makes visible, not one it closes.
+- A failure discovering or enriching one provider is now logged rather
+  than silently swallowed, so a partial-failure batch is visible to
+  whoever's watching the process rather than looking identical to a
+  fully successful one. No retry/backoff yet — that's a real
+  production gap this only makes visible, not one it closes.

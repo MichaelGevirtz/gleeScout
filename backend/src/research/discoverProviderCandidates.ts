@@ -49,7 +49,8 @@ export async function discoverProviderCandidates({
       const retrievedAt = new Date().toISOString();
       const candidate = assembleCandidate({ url: result.url, extraction, retrievedAt });
       if (candidate !== null) candidates.push(candidate);
-    } catch {
+    } catch (error) {
+      console.error(`Extraction failed for candidate ${result.url}:`, error);
       continue;
     }
   }

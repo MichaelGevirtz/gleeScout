@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   FirecrawlConfigError,
+  FirecrawlRateLimitError,
   searchProviderPages,
   type FirecrawlSearchClient,
 } from "./firecrawlProvider.js";
@@ -93,6 +94,28 @@ describe("searchProviderPages", () => {
         client,
       })
     ).rejects.toThrow("Firecrawl API is down");
+  });
+
+  it("throws a FirecrawlRateLimitError when the client rejects with a status-429 error", async () => {
+    const rateLimitError = Object.assign(new Error("Rate limit exceeded"), { status: 429 });
+    const client: FirecrawlSearchClient = {
+      search: vi.fn().mockRejectedValue(rateLimitError),
+    };
+
+    await expect(
+      searchProviderPages({ query: "bounce house in Austin", limit: 8, client })
+    ).rejects.toBeInstanceOf(FirecrawlRateLimitError);
+  });
+
+  it("propagates a non-429-status failure unchanged, not as a rate-limit error", async () => {
+    const serverError = Object.assign(new Error("Internal error"), { status: 500 });
+    const client: FirecrawlSearchClient = {
+      search: vi.fn().mockRejectedValue(serverError),
+    };
+
+    await expect(
+      searchProviderPages({ query: "bounce house in Austin", limit: 8, client })
+    ).rejects.not.toBeInstanceOf(FirecrawlRateLimitError);
   });
 
   it("passes limit through to the underlying client call unchanged", async () => {

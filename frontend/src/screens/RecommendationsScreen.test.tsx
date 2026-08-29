@@ -179,4 +179,13 @@ describe("RecommendationsScreen", () => {
     expect(onSelectRow).toHaveBeenCalledTimes(1);
     expect(onSelectRow.mock.calls[0][0]).toBe(providers[1]);
   });
+
+  it("renders an empty-state message and no rows when providers is empty", async () => {
+    const onSelectRow = jest.fn();
+    await render(<RecommendationsScreen providers={[]} onSelectRow={onSelectRow} />);
+
+    expect(screen.getByTestId("recommendations-empty")).toBeTruthy();
+    expect(screen.queryByTestId("provider-row-0")).toBeNull();
+    expect(screen.queryByTestId("sort-control")).toBeNull();
+  });
 });

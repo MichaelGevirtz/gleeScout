@@ -189,6 +189,8 @@ export default function App() {
     );
   }
 
+  const isDesktopChat = isDesktop && screen === "chat";
+
   return (
     <View style={styles.container}>
       {screen !== "chat" && (
@@ -196,7 +198,13 @@ export default function App() {
           <Text style={styles.chatPillText}>💬 Chat</Text>
         </Pressable>
       )}
-      <View style={styles.content}>{content}</View>
+      {isDesktopChat ? (
+        <View style={styles.chatDesktopBackdrop}>
+          <View style={styles.chatDesktopCard}>{content}</View>
+        </View>
+      ) : (
+        <View style={styles.content}>{content}</View>
+      )}
     </View>
   );
 }
@@ -219,6 +227,31 @@ const styles = StyleSheet.create({
   rightPaneInner: {
     width: "100%",
     maxWidth: 900,
+  },
+  // Desktop-only chat workspace framing (task-64): the split-pane
+  // branch above only activates once `providers` is set, so the
+  // gathering-phase Chat screen otherwise falls into the plain
+  // full-bleed `content` branch with no width cap. This backdrop +
+  // card gives Chat a bounded, centered "workspace" on wide viewports
+  // without touching ChatScreen.tsx or the split-pane layout at all.
+  chatDesktopBackdrop: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
+  chatDesktopCard: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 800,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    overflow: "hidden",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
   chatPill: {
     alignSelf: "flex-end",
