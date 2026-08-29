@@ -1193,9 +1193,27 @@
   the backend's own `shared/hostname.ts` precedent); a full manual
   walkthrough against a live `backend` dev server has not been run yet
   (the bundle-compiles-and-serves check already confirms the wiring is
-  structurally sound). Per the roadmap, README/DESIGN.md final-pass
-  coherence (M18) is the remaining explicit-requirement work; M13
-  (agent trace bonus) remains cut-first/optional.
+  structurally sound).
+- **M16 (error handling, embedded per milestone) is satisfied.** Not a
+  standalone milestone by design (per the roadmap's Scope Discipline
+  note) — verified present at every integration point it applies to:
+  502 mapping for known Gemini/Firecrawl errors and a 500 catch-all
+  with no internal detail leaked (M5/task-12, M12/tasks 43-44),
+  per-candidate discovery/enrichment failures logged rather than
+  swallowed (M7/task-20, M8/task-25), and a rate-limit hit surfaced to
+  the end user as a specific plain-language message rather than the
+  generic failure path (documented in `DESIGN.md`'s Architecture
+  Decisions).
+- **M18 (README & DESIGN.md final coherence pass) is confirmed done**
+  (verified 2026-08-29). `README.md` (setup, running, architecture,
+  API table, design-artifact links, FACT/INFERRED/SIMULATED
+  explanation) and `DESIGN.md` (Assumptions, Architecture Decisions,
+  Optimizations, Production Evolution) both read as current and
+  internally coherent against the now-complete M0-M15 state, including
+  the desktop/web addendum's presence in README's architecture section
+  ("iOS / Android / web"). No further edits needed.
+- Only **M13 (agent trace bonus)** remains — not committed scope per
+  the roadmap, cut-first if time is constrained.
 - M2 (domain models & conversation state) is complete.
 - Task 05 (Gemini client wrapper) is complete; this is shared
   plumbing, not itself a milestone.
