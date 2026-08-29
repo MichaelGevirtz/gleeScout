@@ -36,6 +36,36 @@ interaction until the app is ready to search.
 
 **Errors**: `POST .../message` can 502 (Gemini failure) or 500. Show a small inline error affordance in the chat (a failed-to-send state on the last user bubble with a retry tap) — do not lose the chat itself; this is not the full-screen Error State (that's reserved for the provider-search step, see below).
 
+**Visual-treatment amendment (task-75, 2026-08-29) — chat presence/warmth**:
+this frozen screen's *structure* (bubble transcript, chip bar, input row —
+the chat-first interaction model itself) is unchanged. This amends only
+the *visual weight* given to two elements, per the concrete usability
+problem found: the plain implementation gave no visual signal that "an
+assistant is present," and the current question carried the same visual
+weight as the rest of the transcript, so the screen reads as a generic
+message log rather than a guided conversation. See D21 in
+`memory-bank/decisions.md` for the full rationale and what was
+deliberately *not* adopted from the reference prototype that prompted
+this.
+
+- A Scout mascot image appears once, alongside the **latest assistant
+  message only** — not on every historical assistant bubble. This
+  mirrors the existing recap-chip precedent (task-48): decoration that
+  would repeat unchanged down a growing transcript is reserved for the
+  newest turn.
+- The latest assistant message renders with stronger visual weight
+  (larger type) than earlier transcript bubbles. This is a rendering
+  choice over the *same* `state.messages` content already specified
+  above — no new or invented copy, no secondary explanatory line under
+  the question (the frozen rule that "the client never composes
+  question text itself" still holds).
+- The input row becomes the primary-input treatment (taller, larger
+  text, more prominent send affordance) — still a single free-text
+  `TextInput` + send action, same `onSend` contract, no structured
+  fields.
+- The "What I know so far" chip bar is unchanged: still secondary,
+  still hidden when zero fields are known, still read-only.
+
 ### 2. Transition / search loading (`Transition.dc.html`)
 
 **Purpose**: bridges State 1 → State 2. Chat visually collapses to a

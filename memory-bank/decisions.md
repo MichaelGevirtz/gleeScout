@@ -1432,6 +1432,79 @@ project's existing precedent (D6, D9, D13f) already argues against.
 unmet before this work and none is newly satisfied by it — this is
 error-handling *quality*, not new *scope*.
 
+## D21 — M15 Chat screen warmth revision (amendment to frozen M14 spec, task-75)
+
+**Context**: the user reported `ChatScreen.tsx` "looks too much like a
+form" and supplied an external HTML prototype (mascot character, larger
+question framing, larger input) as inspiration. The frozen M14 spec
+(D16, `design/m14-ux-spec.md`) explicitly gates changing its visuals on
+"a concrete usability problem found during M15 build," so this was
+treated as a formal amendment, not an ad hoc reskin from a pasted file —
+per CLAUDE.md's process requirements and the `piv-task-management`
+approval gate, no code was changed before this decision was written and
+a task file created.
+
+**Usability problem actually found** (distinct from "it's a form" — the
+existing screen has no labeled fields, dropdowns, or survey structure,
+so that framing was imprecise): the implementation is a faithful but
+visually flat translation of the frozen bubble/chip/input structure —
+nothing signals "an assistant is present," and the current question
+carries the same visual weight as the rest of the transcript, so the
+screen reads as a generic message log rather than a guided
+conversation.
+
+**Decision**: amend screen 1 of `design/m14-ux-spec.md` (see that file
+for the exact clause) — chat-first interaction model (D16) is
+unchanged; only visual weight changes: (1) a Scout mascot image shown
+once, next to the latest assistant message only, not repeated down the
+transcript; (2) the latest assistant message gets stronger visual
+weight (larger type) — same `state.messages` content, no invented
+copy; (3) the input row becomes a primary-input treatment (taller,
+larger text, more prominent send affordance), same single-`TextInput`
+contract; (4) "What I know so far" chip bar unchanged — still
+secondary, still hidden when empty.
+
+**Deliberately not adopted from the reference prototype, and why**:
+- A secondary explanatory line under the question (e.g. "This helps me
+  check availability for you.") — would require the client to invent
+  per-question copy. The frozen spec is explicit that "the client
+  never composes question text itself." Rejected.
+- A separate decorative "question card" (icon badge + boxed panel)
+  duplicating the assistant bubble's own content — adds visual weight
+  without adding information, and the existing recap-chip pattern
+  already does the "make the current ask legible" job. Rejected in
+  favor of amplifying the existing bubble rather than adding a second
+  element next to it.
+- Scout shown on every assistant turn (as in the prototype) — reserved
+  for the latest turn only, per the task-48 recap-chip precedent of
+  not repeating unchanging decoration down a growing transcript.
+
+**Assignment alignment**: RECOMMENDATION-level — not `EXPLICIT` (no
+Part 1–6 text calls for a mascot), not a prior `PROJECT DECISION`
+either. Supports Part 6 ("understandable and thoughtfully designed")
+and evaluation criterion 6, Taste. Deliberately kept light — one static
+image asset shown at one point in the transcript, no new dependency,
+no new screen, no new backend call — because the assignment explicitly
+de-emphasizes "visual polish" relative to core product/architecture
+("We care much more about... consumer experience than... production-
+grade infrastructure or visual polish"), and the `ui-ux-design` skill
+itself warns against defaulting to "a default chat-bubble UI" — the
+same caution applies to defaulting to a generic mascot-chat UI without
+scoping it down.
+
+**Status**: ACCEPTED and implemented (task-75, 2026-08-29). Spec
+amendment and decision were written before any code change, per the
+approval gate; the user then approved the task directly. Shipped:
+Scout (`frontend/assets/scout.png`, extracted from the reference
+prototype) beside the latest assistant message only, that message
+amplified to 17px/500 type, and the input row raised to a 56px /
+17px primary-input treatment with a circular send button. All three
+"deliberately not adopted" items above stayed out. `frontend npm test`
+14 suites / 129 tests green, `tsc --noEmit` clean. The breakpoint
+browser pass in the task's Browser Validation checklist was NOT
+performed (no Playwright/browser available in that session) and remains
+an open manual follow-up.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

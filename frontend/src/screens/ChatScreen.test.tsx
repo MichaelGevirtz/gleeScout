@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { ChatScreen } from "./ChatScreen";
 import type { ConversationState } from "../domain/types";
 
@@ -168,5 +168,75 @@ describe("ChatScreen recap chips", () => {
     const lastBubble = screen.getByTestId(`chat-message-${lastAssistantIndex}`);
     expect(lastBubble).toBeTruthy();
     expect(screen.getByTestId("recap-chip-location")).toBeTruthy();
+  });
+});
+
+describe("ChatScreen Scout presence", () => {
+  it("renders Scout exactly once, on the latest assistant message only", async () => {
+    const state = baseState({
+      messages: [
+        { role: "assistant", content: "Hey! Tell me about your event." },
+        { role: "user", content: "A birthday party in Austin." },
+        { role: "assistant", content: "Got it, what date?" },
+      ],
+    });
+
+    await render(<ChatScreen state={state} onSend={jest.fn()} />);
+
+    expect(screen.getAllByTestId("chat-scout")).toHaveLength(1);
+    // Attached to the newest assistant turn...
+    expect(
+      within(screen.getByTestId("chat-message-2")).getByTestId("chat-scout")
+    ).toBeTruthy();
+    // ...and absent from the earlier assistant turn.
+    expect(
+      within(screen.getByTestId("chat-message-0")).queryByTestId("chat-scout")
+    ).toBeNull();
+  });
+
+  it("moves Scout to the new latest assistant message after a state update", async () => {
+    const initialState = baseState({
+      messages: [
+        { role: "assistant", content: "Hey! Tell me about your event." },
+        { role: "user", content: "A bounce house in Austin." },
+        { role: "assistant", content: "Got it — what date?" },
+      ],
+    });
+
+    const { rerender } = await render(<ChatScreen state={initialState} onSend={jest.fn()} />);
+
+    const updatedState = baseState({
+      messages: [
+        ...initialState.messages,
+        { role: "user", content: "June 15th" },
+        { role: "assistant", content: "Perfect — what's your budget?" },
+      ],
+    });
+
+    await rerender(<ChatScreen state={updatedState} onSend={jest.fn()} />);
+
+    expect(screen.getAllByTestId("chat-scout")).toHaveLength(1);
+    expect(
+      within(screen.getByTestId("chat-message-4")).getByTestId("chat-scout")
+    ).toBeTruthy();
+    expect(
+      within(screen.getByTestId("chat-message-2")).queryByTestId("chat-scout")
+    ).toBeNull();
+  });
+
+  it("omits Scout when there is no assistant message yet", async () => {
+    const state = baseState({
+      messages: [{ role: "user", content: "I need a bounce house." }],
+    });
+
+    await render(<ChatScreen state={state} onSend={jest.fn()} />);
+
+    expect(screen.queryByTestId("chat-scout")).toBeNull();
+  });
+
+  it("omits Scout for an empty transcript", async () => {
+    await render(<ChatScreen state={baseState()} onSend={jest.fn()} />);
+
+    expect(screen.queryByTestId("chat-scout")).toBeNull();
   });
 });

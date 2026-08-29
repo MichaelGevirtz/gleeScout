@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import type { ConversationState } from "../domain/types";
+
+// Scout, the assistant's visual presence. Shown beside the latest
+// assistant message only — see D21 / m14-ux-spec.md screen 1.
+const scoutImage = require("../../assets/scout.png");
 
 export interface ChatScreenProps {
   state: ConversationState;
@@ -102,6 +106,8 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
     void attemptSend(text);
   }, [inputText, attemptSend]);
 
+  const isSendDisabled = inputText.trim().length === 0;
+
   const handleRetry = useCallback(() => {
     if (!pendingBubble) {
       return;
@@ -112,16 +118,10 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
   return (
     <View style={styles.container}>
       <ScrollView testID="chat-transcript" style={styles.transcript}>
-        {state.messages.map((message, index) => (
-          <View
-            key={index}
-            testID={`chat-message-${index}`}
-            style={message.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}
-          >
-            <Text style={message.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>
-              {message.content}
-            </Text>
-            {index === lastAssistantIndex && recapFields.length > 0 && (
+        {state.messages.map((message, index) => {
+          const isLatestAssistant = index === lastAssistantIndex;
+          const recapChips =
+            isLatestAssistant && recapFields.length > 0 ? (
               <View testID="chat-recap-chips" style={styles.chipRow}>
                 {recapFields.map((field) => (
                   <View key={field.key} testID={`recap-chip-${field.key}`} style={styles.miniChip}>
@@ -129,9 +129,43 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
                   </View>
                 ))}
               </View>
-            )}
-          </View>
-        ))}
+            ) : null;
+
+          // The newest assistant turn is the one the user is actually
+          // answering, so it gets Scout + heavier type. Earlier turns
+          // keep the plain bubble treatment so the decoration doesn't
+          // repeat down a growing transcript (task-48 precedent).
+          if (isLatestAssistant) {
+            return (
+              <View key={index} testID={`chat-message-${index}`} style={styles.latestAssistantRow}>
+                <Image
+                  testID="chat-scout"
+                  source={scoutImage}
+                  style={styles.scout}
+                  resizeMode="contain"
+                  accessibilityLabel="Scout, your event planning assistant"
+                />
+                <View style={styles.latestAssistantBubble}>
+                  <Text style={styles.latestAssistantText}>{message.content}</Text>
+                  {recapChips}
+                </View>
+              </View>
+            );
+          }
+
+          return (
+            <View
+              key={index}
+              testID={`chat-message-${index}`}
+              style={message.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}
+            >
+              <Text style={message.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>
+                {message.content}
+              </Text>
+              {recapChips}
+            </View>
+          );
+        })}
 
         {pendingBubble && (
           <View testID="chat-pending-message" style={styles.bubbleUser}>
@@ -176,9 +210,16 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
           value={inputText}
           onChangeText={setInputText}
           placeholder="Type your answer…"
+          placeholderTextColor="#9AA1AA"
         />
-        <Pressable testID="chat-send" onPress={handleSend} disabled={inputText.trim().length === 0}>
-          <Text style={styles.sendText}>Send</Text>
+        <Pressable
+          testID="chat-send"
+          onPress={handleSend}
+          disabled={isSendDisabled}
+          accessibilityLabel="Send"
+          style={[styles.sendButton, isSendDisabled && styles.sendButtonDisabled]}
+        >
+          <Text style={styles.sendText}>➤</Text>
         </Pressable>
       </View>
     </View>
@@ -202,6 +243,35 @@ const styles = StyleSheet.create({
   },
   bubbleAssistantText: {
     fontSize: 13.5,
+  },
+  // Latest assistant turn: Scout beside a wider, heavier-type bubble.
+  latestAssistantRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "stretch",
+    gap: 4,
+    marginVertical: 8,
+    paddingRight: 20,
+  },
+  scout: {
+    // Source artwork is 325x290; this keeps its aspect ratio.
+    width: 104,
+    height: 93,
+  },
+  latestAssistantBubble: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#FFE0CB",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  latestAssistantText: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: "500",
+    color: "#27313F",
   },
   bubbleUser: {
     alignSelf: "flex-end",
@@ -286,16 +356,29 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#F0E6E1",
-    paddingHorizontal: 14,
-    fontSize: 14,
+    height: 56,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#E8622E",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 18,
+    fontSize: 17,
+    color: "#27313F",
+  },
+  sendButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#E8622E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendButtonDisabled: {
+    backgroundColor: "#F3C3AF",
   },
   sendText: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: "700",
-    color: "#E8622E",
+    color: "#FFFFFF",
   },
 });

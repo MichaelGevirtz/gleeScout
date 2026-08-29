@@ -1403,7 +1403,15 @@
   Zod-validated for shape only, never verified as genuine — not a
   security boundary in this no-auth prototype).
 
-- **M15 (frontend implementation)**: `frontend/npm test` — 9 suites /
+- **M15 (frontend implementation)**: `frontend/npm test` — 14 suites /
+  129 tests passing as of task-75 (the 9-suite/73-test figure below was
+  the count when M15's first slice landed; suites have since grown with
+  the M13 trace view and the task-75 chat warmth revision). The chat
+  screen now carries the D21 warmth treatment: Scout beside the latest
+  assistant turn only, that turn amplified, and a primary-input row.
+  Its four-breakpoint browser check is still outstanding — Playwright
+  is not installed, so it joins the manual-check deferral noted below.
+  Historic detail: `frontend/npm test` — 9 suites /
   73 tests passing (Jest + `jest-expo` + RNTL; no live network calls,
   `api/client`/`useSession` mocked in component tests). `npx tsc
   --noEmit` clean. Manual check beyond the Jest suite: `CI=1 npx expo
