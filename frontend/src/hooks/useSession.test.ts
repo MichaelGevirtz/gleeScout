@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSession } from "./useSession";
 import { ApiError, createConversation, getConversation, sendMessage } from "../api/client";
@@ -86,6 +87,40 @@ describe("useSession bootstrap", () => {
     expect(result.current.bootstrapError).toBe("boom");
     expect(result.current.state).toBeNull();
     expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  describe("on web", () => {
+    const originalPlatformOS = Platform.OS;
+
+    beforeEach(() => {
+      Platform.OS = "web";
+    });
+
+    afterEach(() => {
+      Platform.OS = originalPlatformOS;
+    });
+
+    it("never reads stored session id and always creates a fresh session", async () => {
+      mockedCreate.mockResolvedValueOnce({ sessionId: "s1", state });
+
+      const { result } = await renderHook(() => useSession());
+
+      await waitFor(() => expect(result.current.isBootstrapping).toBe(false));
+
+      expect(mockedAsyncStorage.getItem).not.toHaveBeenCalled();
+      expect(mockedGet).not.toHaveBeenCalled();
+      expect(mockedCreate).toHaveBeenCalledTimes(1);
+      expect(result.current.sessionId).toBe("s1");
+    });
+
+    it("never writes the new session id to storage", async () => {
+      mockedCreate.mockResolvedValueOnce({ sessionId: "s1", state });
+
+      await renderHook(() => useSession());
+
+      await waitFor(() => expect(mockedCreate).toHaveBeenCalledTimes(1));
+      expect(mockedAsyncStorage.setItem).not.toHaveBeenCalled();
+    });
   });
 
   it("retryBootstrap re-runs the full sequence", async () => {

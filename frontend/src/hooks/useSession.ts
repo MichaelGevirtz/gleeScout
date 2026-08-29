@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiError, createConversation, getConversation, sendMessage as apiSendMessage } from "../api/client";
 import type { ConversationState } from "../domain/types";
@@ -24,7 +25,12 @@ export function useSession(): UseSessionResult {
     setIsBootstrapping(true);
     setBootstrapError(null);
     try {
-      const storedSessionId = await AsyncStorage.getItem(SESSION_ID_KEY);
+      // Web always starts a fresh conversation on load — no resume — so
+      // opening the app gives a clean, predictable starting point every
+      // time (e.g. for an interviewer testing it), unlike native, where
+      // resuming on relaunch is intended (design/m14-ux-spec.md).
+      const storedSessionId =
+        Platform.OS === "web" ? null : await AsyncStorage.getItem(SESSION_ID_KEY);
 
       if (storedSessionId) {
         try {
@@ -43,7 +49,9 @@ export function useSession(): UseSessionResult {
       }
 
       const created = await createConversation();
-      await AsyncStorage.setItem(SESSION_ID_KEY, created.sessionId);
+      if (Platform.OS !== "web") {
+        await AsyncStorage.setItem(SESSION_ID_KEY, created.sessionId);
+      }
       setSessionId(created.sessionId);
       setState(created.state);
       setIsBootstrapping(false);

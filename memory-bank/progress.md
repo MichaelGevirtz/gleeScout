@@ -935,6 +935,27 @@
   --noEmit` clean, no regressions. Manual desktop/mobile visual check
   not run this session (structural/unit coverage only).
 
+- **Task 63 — Web platform always starts a fresh conversation** (DONE,
+  see `tasks/completed/task-63-web-always-fresh-session.md`):
+  demo/interviewer-testing usability fix, direct first-person
+  instruction. `frontend/src/hooks/useSession.ts`'s `bootstrap()` now
+  skips the stored-session `AsyncStorage.getItem`/`setItem` calls
+  entirely when `Platform.OS === "web"`, always creating a fresh
+  conversation on web instead of resuming whatever session was last
+  left in browser storage — native platforms keep resuming exactly as
+  before (task-47's spec-mandated "resume on relaunch" behavior,
+  untouched). PROJECT DECISION, distinct from D9 (backend persistence,
+  already fully satisfied regardless of client behavior) — this only
+  concerns the client-side convenience cache task-47 added. 2 new
+  tests (`useSession.test.ts`'s new `describe("on web")` block,
+  temporarily overriding `Platform.OS` and restoring it in
+  `afterEach` — confirmed via a throwaway test that jest-expo's
+  default test platform is `"ios"`, so none of the 5 existing
+  bootstrap tests needed changes). `frontend npm test` 13 suites / 101
+  tests passing (99 pre-existing + 2 new), `npx tsc --noEmit` clean,
+  no regressions. Manual browser reload check left to the user (no
+  browser automation available this session).
+
 ## Current State
 
 - `docs/Home Assignment.pdf` in place.
