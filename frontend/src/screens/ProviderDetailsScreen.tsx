@@ -268,14 +268,12 @@ export default function ProviderDetailsScreen({
                     <FieldIcon field={fieldName} />
                     <Text style={styles.factRowLabel}>{FIELD_LABELS[fieldName]}</Text>
                   </View>
-                  <View style={styles.factRowRight}>
-                    <Text testID={`fact-row-${fieldName}-value`} style={styles.factRowValue}>
-                      {formatFactValue(fact.value)}
-                    </Text>
-                    <Text testID={`fact-row-${fieldName}-source`} style={styles.factRowSource}>
-                      {fact.source}
-                    </Text>
-                  </View>
+                  <Text testID={`fact-row-${fieldName}-value`} style={styles.factRowValue}>
+                    {formatFactValue(fact.value)}
+                  </Text>
+                  <Text testID={`fact-row-${fieldName}-source`} style={styles.factRowSource}>
+                    {fact.source}
+                  </Text>
                 </View>
               );
             })}
@@ -387,10 +385,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   factRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 14,
+    gap: 4,
     paddingVertical: 11,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
@@ -399,20 +394,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    flexShrink: 0,
   },
   factRowLabel: {
     fontSize: 13.5,
     color: "#6b7280",
   },
-  factRowRight: {
-    alignItems: "flex-end",
-  },
   factRowValue: {
     fontSize: 13.5,
     fontWeight: "600",
     color: "#111827",
-    textAlign: "right",
   },
   factRowSource: {
     fontSize: 10,

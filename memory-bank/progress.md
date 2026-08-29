@@ -1604,6 +1604,29 @@
   instead comes from the component tests above, which assert the exact
   new DOM structure/props (hero `source`, filmstrip index-to-URL
   mapping, overflow count, name-row absence).
+- **Task 87 — Provider Details scroll and long-value wrap fix** (DONE,
+  see `tasks/completed/task-87-provider-details-scroll-and-wrap-fix.md`):
+  two bugs found by the user's own live look at task-86's redesign
+  (the gap that task-86 flagged as untested). (1)
+  `frontend/src/App.tsx`'s desktop split-pane `rightPaneInner` style
+  was missing `flex: 1`/`minHeight: 0`, so `ProviderDetailsScreen`'s
+  `ScrollView` never got a height-bounded parent on web and content
+  below the fold was simply clipped, not scrollable. (2)
+  `ProviderDetailsScreen.tsx`'s `factRow` was a row layout with an
+  unconstrained right-aligned value column, so long values (Location,
+  Pricing, Policies) overflowed the row's right edge instead of
+  wrapping; changed to a column layout (icon+label on top, value below,
+  left-aligned). Both are style-only fixes, no data/prop contract
+  change. 1 new component test (long `location` value renders in full,
+  not truncated). `frontend/npm test`: 151/151 passing.
+  `frontend/npx tsc --noEmit`: clean. Not re-verified in a live
+  browser for the same reason as task-86 (reaching this screen needs a
+  live Gemini/Firecrawl-backed flow) — confidence instead comes from
+  the component test plus the fact that both fixes are well-understood
+  RN Flexbox mechanisms (a missing `flex: 1` blocking `ScrollView`
+  overflow; an unconstrained row child refusing to wrap). Live-browser
+  verification of this exact screen remains an open follow-up from
+  task-86.
 
 ## Blocked Work
 

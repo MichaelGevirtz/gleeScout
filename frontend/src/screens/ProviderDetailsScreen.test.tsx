@@ -119,6 +119,26 @@ describe("ProviderDetailsScreen — sourced facts", () => {
     expect(screen.queryByTestId("fact-row-policies")).toBeNull();
     expect(screen.queryByTestId("fact-row-contactMethod")).toBeNull();
   });
+
+  it("renders a long value in full, for wrapping rather than truncation", async () => {
+    const longLocation =
+      "Austin, Texas (Service areas include Round Rock, Pflugerville, Georgetown, Cedar Park, Leander, Hutto, Liberty Hill, Killeen, Taylor)";
+    const candidateWithLongLocation: ProviderCandidate = {
+      ...fullCandidate,
+      fields: { ...fullCandidate.fields, location: fact(longLocation) },
+    };
+
+    await render(
+      <ProviderDetailsScreen
+        candidate={candidateWithLongLocation}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    expect(screen.getByTestId("fact-row-location-value").props.children).toBe(longLocation);
+  });
 });
 
 describe("ProviderDetailsScreen — photo gallery", () => {
