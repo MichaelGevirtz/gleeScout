@@ -1818,6 +1818,45 @@ blended/source-neutral naming). Revisit only if a future task adds a
 real Google/Yelp integration, at which point this mock path should be
 removed rather than kept alongside real data.
 
+## D27 — Provider Details "Sourced facts" visual redesign + react-native-svg (task-86)
+
+**Decision**: `ProviderDetailsScreen.tsx`'s fact list moved from plain
+unstyled `<Text>` rows to icon-labeled listing rows (icon + label
+left, value + `fact.source` caption right, bottom-bordered), with
+`candidate.fields.photos` rendered as a hero `<Image>` + horizontal
+filmstrip (capped at 6 thumbnails, "+N" chip for the remainder)
+instead of a `<Text>` node joining ~30 raw URLs. `"name"` was dropped
+from the rendered field list — it already appears in
+`SelectedProviderHeader`, so a separate row only repeated it. The
+"Inferred from reviews" cards got a left-border pull-quote treatment;
+the `select-cta` button, previously a bare unstyled `Pressable`, got a
+solid-fill style. `SelectedProviderHeader` and the dimension-bars
+block were not touched. The direction was chosen from two mocked-up
+options ("Fact Grid" vs. "Story Listing") published as a design
+canvas for comparison — a lighter process than the full
+`ui-ux-design` 3-concept skill, justified because this only restyles
+how an existing screen presents data it already has (no new screen,
+no interaction-model or flow change; the M14 flow direction is
+untouched). `react-native-svg` was added as a new dependency
+(`npx expo install react-native-svg`) to render the row/section icons
+— flagged mid-task since the task was originally scoped assuming no
+new dependency, and approved by the reviewer via AskUserQuestion
+in favor of dropping icons entirely.
+**Rationale**: Live screenshots during the session showed the shipped
+fact list as unstyled black text with a wall of raw CDN photo URLs —
+a real Part 6 ("understandable and thoughtfully designed") gap, not
+matched by the historical `design/m14-desktop/ProviderDetails.dc.html`
+mockup's coral/Sora aesthetic (that mockup was never carried into the
+actual M15 implementation, which shipped a plainer gray/indigo style
+instead). Every value shown keeps its `fact.source` caption visible or
+more prominent than before — Part 5/"Trust & Grounding" provenance is
+preserved, not weakened. `rating`/`reviewCount` stay separate rows
+(not merged into one line) since each is an independent `Fact` with
+its own `.source`; merging would blur which source backs which value.
+**Status**: Project decision, direction confirmed by the reviewer
+(Option B) after reviewing both mocked options; dependency addition
+confirmed via AskUserQuestion mid-implementation.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

@@ -102,8 +102,9 @@ describe("ProviderDetailsScreen — sourced facts", () => {
       />,
     );
 
-    expect(screen.getByTestId("fact-row-name-value").props.children).toBe("Acme Bounce Houses");
-    expect(screen.getByTestId("fact-row-name-source").props.children).toBe("acmebouncehouses.com");
+    // "name" never gets its own row — it's already shown in the header
+    // above, so a separate fact row would just repeat it.
+    expect(screen.queryByTestId("fact-row-name")).toBeNull();
 
     expect(screen.getByTestId("fact-row-location-value").props.children).toBe("Austin, TX");
     expect(screen.getByTestId("fact-row-servicesOffered-value").props.children).toBe(
@@ -115,9 +116,75 @@ describe("ProviderDetailsScreen — sourced facts", () => {
 
     // Fields never set on this candidate get no row at all.
     expect(screen.queryByTestId("fact-row-availability")).toBeNull();
-    expect(screen.queryByTestId("fact-row-photos")).toBeNull();
     expect(screen.queryByTestId("fact-row-policies")).toBeNull();
     expect(screen.queryByTestId("fact-row-contactMethod")).toBeNull();
+  });
+});
+
+describe("ProviderDetailsScreen — photo gallery", () => {
+  it("renders nothing when fields.photos is unset", async () => {
+    await render(
+      <ProviderDetailsScreen
+        candidate={fullCandidate}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    expect(screen.queryByTestId("photo-gallery")).toBeNull();
+  });
+
+  it("uses the first photo as the hero and the rest (capped at 6) as the filmstrip, with a '+N' chip for the remainder", async () => {
+    const urls = Array.from({ length: 9 }, (_, i) => `https://cdn.example.com/photo-${i}.jpg`);
+    const candidateWithPhotos: ProviderCandidate = {
+      ...fullCandidate,
+      fields: { ...fullCandidate.fields, photos: fact(urls, "wenphoto.net") },
+    };
+
+    await render(
+      <ProviderDetailsScreen
+        candidate={candidateWithPhotos}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    expect(screen.getByTestId("photo-gallery-hero").props.source).toEqual({ uri: urls[0] });
+
+    for (let i = 0; i < 6; i++) {
+      expect(screen.getByTestId(`photo-gallery-filmstrip-image-${i}`).props.source).toEqual({
+        uri: urls[i + 1],
+      });
+    }
+    expect(screen.queryByTestId("photo-gallery-filmstrip-image-6")).toBeNull();
+
+    // 9 total - 1 hero - 6 filmstrip = 2 remaining.
+    expect(screen.getByTestId("photo-gallery-more")).toHaveTextContent("+2");
+  });
+
+  it("renders only a hero, no filmstrip or '+N' chip, when there's a single photo", async () => {
+    const candidateWithOnePhoto: ProviderCandidate = {
+      ...fullCandidate,
+      fields: {
+        ...fullCandidate.fields,
+        photos: fact(["https://cdn.example.com/only.jpg"], "wenphoto.net"),
+      },
+    };
+
+    await render(
+      <ProviderDetailsScreen
+        candidate={candidateWithOnePhoto}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    expect(screen.getByTestId("photo-gallery-hero")).toBeTruthy();
+    expect(screen.queryByTestId("photo-gallery-filmstrip-image-0")).toBeNull();
+    expect(screen.queryByTestId("photo-gallery-more")).toBeNull();
   });
 });
 

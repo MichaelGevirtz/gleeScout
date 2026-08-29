@@ -1580,6 +1580,31 @@
   the point the mock reputation feature (D26) actually becomes
   user-visible.
 
+- **Task 86 — Provider Details "Sourced facts" visual redesign**
+  (DONE, see `tasks/completed/task-86-provider-facts-redesign.md`):
+  `frontend/src/screens/ProviderDetailsScreen.tsx` restyled per D27
+  (Option B, "Story Listing") — icon-labeled listing rows for
+  `location`/`servicesOffered`/`pricing`/`availability`/`rating`/
+  `reviewCount`/`policies`/`contactMethod`, a hero + filmstrip photo
+  gallery for `candidate.fields.photos` (rendered only when present;
+  first URL as hero, next 6 as filmstrip, "+N" chip for the rest), a
+  pull-quote-styled "Inferred from reviews" section, and a styled
+  `select-cta` button. `"name"` no longer gets its own fact row
+  (already shown in the header). Added `react-native-svg` as a new
+  dependency for the row/section icons (see D27). Does not touch
+  `SelectedProviderHeader.tsx`, the dimension-bars block, any backend
+  file, or other screens. 5 new component tests (name-row removal,
+  photo-gallery absence, hero/filmstrip/"+N" slicing with 9 URLs,
+  single-photo edge case). `frontend/npm test`: 150/150 passing.
+  `frontend/npx tsc --noEmit`: clean. Not visually driven in a live
+  browser — the real flow to reach this screen requires a live
+  Gemini/Firecrawl-backed provider search (previously observed to
+  take 30s+ and hit rate limits), and no lightweight browser-automation
+  tool was available without adding a further new dependency; coverage
+  instead comes from the component tests above, which assert the exact
+  new DOM structure/props (hero `source`, filmstrip index-to-URL
+  mapping, overflow count, name-row absence).
+
 ## Blocked Work
 
 - None.
