@@ -1505,6 +1505,63 @@ browser pass in the task's Browser Validation checklist was NOT
 performed (no Playwright/browser available in that session) and remains
 an open manual follow-up.
 
+## D22 — Deterministic Scout welcome message on new sessions (task-76)
+
+**Context**: task-75 gave the newest assistant turn a Scout mascot, but
+a new session's transcript starts empty, so the very first screen a user
+sees had no Scout, no greeting, and no sign the assistant exists — the
+exact problem D21 set out to fix, unaddressed at the one moment it
+matters most. This was found by running the app while the Gemini key was
+rate limited: the first send failed, no assistant message ever arrived,
+and the screen stayed blank.
+
+**Decision**: seed one static `SCOUT_WELCOME_MESSAGE` (an
+`assistant` `Message` constant) into `messages` when a session is
+created. It is display-only conversation history — an opener, not a
+question — and is never generated, phrased, or rewritten by an LLM.
+
+**Why static rather than LLM-phrased**: a generated greeting would add
+latency and a failure mode to the one screen that must never fail, cost
+a Gemini call per session, and hand deterministic content to a
+non-deterministic source. A constant means the app opens correctly even
+when Gemini is down or rate limited — which is precisely the condition
+under which the blank screen was observed. Consistent with the project's
+"deterministic application logic owns structured state" principle.
+
+**Seeding location — `createSession()`, not `createInitialState()`**:
+this is the non-obvious part. `createInitialState()` looks like the
+natural home for "the initial state," but it also serves as the
+blank-state fixture builder for ~100 unit-test call sites across
+`mergeExtraction`, `orchestrateMessage`, `questionPolicy`, `extraction`,
+`ranking/`, `providerQuestions/`, `recommendation/` and `server.test.ts`.
+Seeding there would have injected UX copy into every synthetic state and
+broken assertions that compare exact `messages` arrays. `createSession()`
+in the store is the real new-session path, so the greeting reaches every
+actual session while no fixture changes. The copy constant still lives in
+the domain module that owns `Message`; only the seeding lives in the
+store. A test now pins `createInitialState` to `messages: []` so the
+distinction cannot erode.
+
+**Why it is provably inert**: the LLM layer never reads the transcript —
+there is no reference to `.messages` anywhere in `backend/src/llm/`.
+`extractRequirements` and `generatePendingQuestion` consume structured
+state only, and `mergeExtraction`/`orchestrateMessage` are append-only.
+So the greeting cannot influence extraction, question selection,
+readiness, or ranking. Tests assert this directly by running the same
+orchestration with and without the greeting and comparing results.
+
+**Assignment alignment**: RECOMMENDATION-level, same category as D21 —
+supports Part 6 ("understandable and thoughtfully designed") and
+evaluation criterion 6, Taste. Deliberately scoped to a constant plus one
+line: no onboarding screen, no animation, no greeting component, no new
+state, endpoint, or LLM call.
+
+**Status**: ACCEPTED and implemented (task-76). `backend npm test` 38
+files / 340 tests green, `npm run typecheck` clean, `frontend npm test`
+129 tests green with zero frontend files changed. The on-screen result
+has not been observed in a browser (no Playwright) — it inherits
+task-75's open manual-check follow-up.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { ConversationStateSchema } from "../domain/conversation.js";
+import { describe, expect, it, vi } from "vitest";
+import { ConversationStateSchema, SCOUT_WELCOME_MESSAGE } from "../domain/conversation.js";
 import { createSession, getSession, updateSession } from "./sessionStore.js";
 
 describe("sessionStore", () => {
@@ -30,6 +30,45 @@ describe("sessionStore", () => {
     const bogusState = { ...created, sessionId: "does-not-exist" };
 
     expect(() => updateSession("does-not-exist", bogusState)).toThrow();
+  });
+
+  it("seeds a new session with exactly one message: the Scout greeting", () => {
+    const created = createSession();
+
+    expect(created.messages).toHaveLength(1);
+    expect(created.messages[0]).toEqual({
+      role: "assistant",
+      content: SCOUT_WELCOME_MESSAGE.content,
+    });
+    expect(created.messages[0].role).toBe("assistant");
+  });
+
+  it("leaves the rest of the initial state untouched when seeding the greeting", () => {
+    const created = createSession();
+
+    expect(created.phase).toBe("gathering");
+    expect(created.serviceCategory).toBeNull();
+    expect(created.coreAttributes).toEqual({});
+    expect(created.categoryAttributes).toEqual({});
+  });
+
+  it("gives each session its own greeting object, never a shared reference", () => {
+    const first = createSession();
+    const second = createSession();
+
+    expect(first.messages[0]).not.toBe(second.messages[0]);
+    expect(first.messages[0]).not.toBe(SCOUT_WELCOME_MESSAGE);
+    expect(first.messages[0]).toEqual(second.messages[0]);
+  });
+
+  it("creates a session without any network I/O — the greeting is static, not generated", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const created = createSession();
+
+    expect(created.messages).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 
   it("generates different session ids across calls", () => {

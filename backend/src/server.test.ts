@@ -8,7 +8,11 @@ import {
 import { GeminiRateLimitError, GeminiValidationError } from "./llm/geminiClient.js";
 import { FirecrawlConfigError, FirecrawlRateLimitError } from "./research/firecrawlProvider.js";
 import { getTrace } from "./store/traceStore.js";
-import { createInitialState, type ConversationState } from "./domain/conversation.js";
+import {
+  createInitialState,
+  SCOUT_WELCOME_MESSAGE,
+  type ConversationState,
+} from "./domain/conversation.js";
 import type { ProviderCandidate } from "./domain/provider.js";
 import type { Simulated } from "./domain/evidence.js";
 import type { ProviderScore } from "./ranking/types.js";
@@ -55,8 +59,22 @@ describe("POST /conversation", () => {
     expect(body.state).toMatchObject({
       sessionId: body.sessionId,
       phase: "gathering",
-      messages: [],
+      // task-76: a new session opens with the deterministic Scout greeting,
+      // not an empty transcript.
+      messages: [{ role: "assistant", content: SCOUT_WELCOME_MESSAGE.content }],
     });
+  });
+
+  it("seeds the Scout greeting as the only message, without calling orchestrate", async () => {
+    const orchestrate = vi.fn();
+    const app = buildServer({ orchestrate });
+
+    const response = await app.inject({ method: "POST", url: "/conversation" });
+
+    expect(response.json().state.messages).toEqual([
+      { role: "assistant", content: SCOUT_WELCOME_MESSAGE.content },
+    ]);
+    expect(orchestrate).not.toHaveBeenCalled();
   });
 });
 
@@ -78,6 +96,47 @@ describe("GET /conversation/:id", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().state.sessionId).toBe(sessionId);
+  });
+
+  it("returns the seeded Scout greeting when a session is resumed", async () => {
+    const app = buildServer();
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const { sessionId } = created.json();
+
+    const response = await app.inject({ method: "GET", url: `/conversation/${sessionId}` });
+
+    expect(response.json().state.messages).toEqual([
+      { role: "assistant", content: SCOUT_WELCOME_MESSAGE.content },
+    ]);
+  });
+
+  it("keeps the greeting first in the transcript after the user's first message", async () => {
+    // Mirrors the real orchestrator's append-only behaviour (mergeExtraction
+    // appends the user message, orchestrateMessage appends the question).
+    const orchestrate: OrchestrateMessageFn = async ({ state, message }) => ({
+      ...state,
+      messages: [
+        ...state.messages,
+        { role: "user", content: message },
+        { role: "assistant", content: "When would you like the event to take place?" },
+      ],
+    });
+    const app = buildServer({ orchestrate });
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const { sessionId } = created.json();
+
+    await app.inject({
+      method: "POST",
+      url: `/conversation/${sessionId}/message`,
+      payload: { message: "I need a bounce house" },
+    });
+    const resumed = await app.inject({ method: "GET", url: `/conversation/${sessionId}` });
+
+    expect(resumed.json().state.messages).toEqual([
+      { role: "assistant", content: SCOUT_WELCOME_MESSAGE.content },
+      { role: "user", content: "I need a bounce house" },
+      { role: "assistant", content: "When would you like the event to take place?" },
+    ]);
   });
 });
 

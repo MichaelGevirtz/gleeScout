@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createInitialState, type ConversationState } from "../domain/conversation.js";
+import {
+  createInitialState,
+  SCOUT_WELCOME_MESSAGE,
+  type ConversationState,
+} from "../domain/conversation.js";
 import type { ExtractionResult } from "../llm/extraction.js";
 import type { MissingAttributeTarget } from "./questionPolicy.js";
 import { orchestrateMessage, type ExtractFn, type PhraseFn } from "./orchestrateMessage.js";
@@ -177,5 +181,89 @@ describe("orchestrateMessage", () => {
     });
 
     expect(state).toEqual(snapshot);
+  });
+});
+
+// task-76: the seeded Scout greeting is display-only conversation history.
+// These lock in that it cannot leak into the deterministic path — the same
+// run with and without it must produce identical structured state, the same
+// extraction input, and the same next question.
+describe("orchestrateMessage with the seeded Scout greeting", () => {
+  const greeted = (): ConversationState => ({
+    ...createInitialState("s1"),
+    messages: [{ ...SCOUT_WELCOME_MESSAGE }],
+  });
+
+  function structuredOnly(state: ConversationState) {
+    const { messages: _messages, ...rest } = state;
+    return rest;
+  }
+
+  it("does not change the structured state extraction produces", async () => {
+    const run = (state: ConversationState) =>
+      orchestrateMessage({
+        state,
+        message: "I need a bounce house",
+        extract: fakeExtract(emptyExtraction({ serviceCategory: "bounce house rental" })),
+        phrase: fakePhrase("When would you like the event to take place?"),
+      });
+
+    const withGreeting = await run(greeted());
+    const withoutGreeting = await run(createInitialState("s1"));
+
+    expect(structuredOnly(withGreeting)).toEqual(structuredOnly(withoutGreeting));
+  });
+
+  it("does not change the message handed to extraction", async () => {
+    let capturedMessage: string | undefined;
+    const extract: ExtractFn = async ({ message }) => {
+      capturedMessage = message;
+      return emptyExtraction();
+    };
+
+    await orchestrateMessage({
+      state: greeted(),
+      message: "I need a bounce house",
+      extract,
+      phrase: fakePhrase("When?"),
+    });
+
+    expect(capturedMessage).toBe("I need a bounce house");
+  });
+
+  it("does not change question selection or readiness", async () => {
+    const targets: (MissingAttributeTarget | undefined)[] = [];
+    const phrase: PhraseFn = async ({ target }) => {
+      targets.push(target);
+      return "When?";
+    };
+    const run = (state: ConversationState) =>
+      orchestrateMessage({
+        state,
+        message: "I need a bounce house",
+        extract: fakeExtract(emptyExtraction()),
+        phrase,
+      });
+
+    const withGreeting = await run(greeted());
+    const withoutGreeting = await run(createInitialState("s1"));
+
+    expect(targets[0]).toEqual(targets[1]);
+    expect(withGreeting.phase).toBe(withoutGreeting.phase);
+  });
+
+  it("keeps the greeting first, followed by the user message and the assistant question", async () => {
+    const result = await orchestrateMessage({
+      state: greeted(),
+      message: "I need a bounce house",
+      extract: fakeExtract(emptyExtraction()),
+      phrase: fakePhrase("When would you like the event to take place?"),
+    });
+
+    expect(result.messages).toEqual([
+      { role: "assistant", content: SCOUT_WELCOME_MESSAGE.content },
+      { role: "user", content: "I need a bounce house" },
+      { role: "assistant", content: "When would you like the event to take place?" },
+    ]);
   });
 });

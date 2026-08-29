@@ -1421,6 +1421,14 @@
   follow-up, same precedent as prior manual-check deferrals elsewhere
   in this project).
 
+- **Backend (task-76)**: `backend/npm test` — 38 files / 340 tests
+  passing, `npm run typecheck` clean. New sessions now open with a
+  deterministic Scout greeting seeded in `createSession()` (see D22),
+  so the chat screen is never blank on first open and Scout appears
+  immediately. No LLM call is involved, so this holds even when Gemini
+  is unavailable. `createInitialState()` deliberately still returns an
+  empty transcript and is test-guarded to stay that way.
+
 ## Blocked Work
 
 - None.

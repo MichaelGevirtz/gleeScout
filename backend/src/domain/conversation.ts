@@ -22,6 +22,21 @@ export const MessageSchema = z.object({
 });
 export type Message = z.infer<typeof MessageSchema>;
 
+/**
+ * Deterministic opening line seeded into every new session (task-76).
+ * Static by design: seeding it costs no Gemini call, so the chat screen
+ * is never blank on first open — even while the LLM is unavailable or
+ * rate limited. It is an opener, not a question, so it never competes
+ * with `selectNextMissingAttribute`'s pending question. Display-only
+ * conversation history: nothing in the extraction / question-selection /
+ * readiness path reads `messages`.
+ */
+export const SCOUT_WELCOME_MESSAGE: Message = {
+  role: "assistant",
+  content:
+    "Hi, I'm Scout. Tell me about the event you're planning and I'll help you find the right providers.",
+};
+
 export const ConversationStateSchema = z.object({
   sessionId: z.string(),
   phase: ConversationPhaseSchema,
