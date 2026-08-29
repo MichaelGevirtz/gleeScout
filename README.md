@@ -85,6 +85,10 @@ cd backend && npm run eval:extraction
 
 ## Architecture
 
+A visual system-design diagram (system context, the request pipeline,
+and the FACT / INFERRED / SIMULATED data model) is published here:
+[GleeScout Architecture](https://claude.ai/code/artifact/83004601-b87f-4093-9ea7-28229d74a832).
+
 ```
 frontend/  Expo + React Native (iOS / Android / web)
              App.tsx owns cross-screen flow; screens are presentational
