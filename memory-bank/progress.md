@@ -1212,8 +1212,97 @@
   internally coherent against the now-complete M0-M15 state, including
   the desktop/web addendum's presence in README's architecture section
   ("iOS / Android / web"). No further edits needed.
-- Only **M13 (agent trace bonus)** remains — not committed scope per
-  the roadmap, cut-first if time is constrained.
+- **M13 (agent trace bonus) is now fully complete** (2026-08-29) — not
+  committed scope per the roadmap (cut-first if time were constrained),
+  but built end-to-end per direct user instruction. Assignment re-read
+  directly for this milestone (page 8): "An agent trace/debug view
+  showing how the recommendation was produced." Scope narrowed from
+  the roadmap's original broader wording ("per-session trace of
+  orchestrator steps," implying the whole conversation flow) to
+  exactly the two functions that produce a recommendation —
+  `generateProviderList` (M7 discovery → M8 enrichment → M9 ranking)
+  and `selectProvider` (M10 gap analysis → M11 simulation) — not the
+  M3/M4/M5 requirement-gathering turns. Also, per direct user
+  instruction, scope was **widened** beyond a JSON-only debug endpoint
+  to include a human-readable frontend trace view, since "debug/
+  **view**" is the assignment's own word. Full rationale in D10's
+  2026-08-29 addendum, `decisions.md`.
+  - **Task 69 — Trace domain schema + in-memory per-session trace
+    store** (DONE, `tasks/completed/task-69-trace-domain-and-store.md`):
+    `backend/src/domain/trace.ts` (`TraceEventSchema`/`TraceEvent` —
+    `step`, `summary`, optional `detail: Record<string, unknown>`, ISO
+    `timestamp`) and `backend/src/store/traceStore.ts`
+    (`appendTraceEvents`/`getTrace` — a separate, append-only,
+    per-session `Map`, mirroring `sessionStore.ts` but deliberately not
+    a field on `ConversationState`). Pure schema + storage only. 11 new
+    tests.
+  - **Task 70 — Instrument `generateProviderList`** (DONE,
+    `tasks/completed/task-70-instrument-generate-provider-list.md`):
+    now returns `{ providers, trace }` — four events (`discover`,
+    `enrich`, `rank`, `recommend`) built entirely from data already
+    visible to the function, with **no changes to M7/M8's own files**
+    (a deliberate boundary: trace detail is only as granular as what's
+    already observable from their existing return values — no separate
+    pre-/post-dedup count, enrichment bucketed into
+    with-signal/no-signal-found/not-enriched by inspecting
+    `.inferred`). `/providers` route writes the trace via
+    `appendTraceEvents`; response body unchanged. 1 new test + 1 new
+    route assertion.
+  - **Task 71 — Instrument `selectProvider`** (DONE,
+    `tasks/completed/task-71-instrument-select-provider.md`): now
+    returns `{ answers, trace }` — two events (`prepareQuestions` —
+    lists the literal phrased questions, even at zero;
+    `simulateAnswers` — count only, no answer text, to avoid showing
+    SIMULATED content in two places). No M10 files touched (gap
+    *topics* aren't exposed outside `prepareProviderQuestions`, so the
+    trace shows the phrased questions instead — equally informative for
+    Part 4's "what information it still needs," no reopening needed).
+    `/providers/select` route writes the trace. 2 new tests + 1 new
+    route assertion.
+  - **Task 72 — `GET /conversation/:id/trace` debug route** (DONE,
+    `tasks/completed/task-72-trace-debug-route.md`): 404 unknown
+    session, 200 `{ events: TraceEvent[] }` otherwise (`[]` for "no
+    trace yet," not an error). Read-only, no phase gate, no
+    `runSerialized`. 3 new route tests.
+  - **Task 73 — `TraceScreen` + `fetchTrace` API client function**
+    (DONE, `tasks/completed/task-73-trace-screen-and-api-client.md`):
+    new presentational `frontend/src/screens/TraceScreen.tsx` (props
+    `{ events, onBack }`) — a "Debug / Transparency View" banner, one
+    numbered section per event in arrival order, a per-`step` detail
+    renderer for all six known shapes. `frontend/src/api/client.ts`
+    gained `fetchTrace`; `frontend/src/domain/types.ts` gained
+    `TraceEvent`. No `App.tsx` wiring yet (that's task-74, same split
+    M15 used between building screens and wiring them in). Surfaced a
+    new RNTL gotcha: `toHaveTextContent` is **exact**-match by default
+    in this project's RNTL version (confirmed by reading
+    `node_modules/@testing-library/react-native/dist/matches.js`
+    directly), not substring — every multi-content assertion needed
+    `{ exact: false }`. 10 new tests.
+  - **Task 74 — Wire `TraceScreen` into `App.tsx`** (DONE,
+    `tasks/completed/task-74-wire-trace-into-app.md`): last M13 task.
+    `RecommendationsScreen` gained `onViewTrace` + a "How was this
+    recommendation produced?" link (both populated and empty-state
+    branches). `App.tsx` gained a `"trace"` screen state and
+    `runFetchTrace` (same set-error-null → loading → fetch →
+    result-or-error shape as `runProviderSearch`/`runSelectProvider`);
+    loading reuses `TransitionScreen`, back reuses
+    `handleBackToMatches`. The desktop split-pane branch needed zero
+    special-casing — it already covers any screen once
+    `providers !== null`. 6 new tests (2 component + 4 App-level
+    integration, including a desktop-split-pane case).
+  - **End-to-end result**: `frontend npm test` 14 suites / 121 tests
+    passing (all M13 frontend work, 0 regressions); `backend npm test`
+    327/327 passing (all M13 backend work, 0 regressions); both
+    `npx tsc --noEmit`/`npm run typecheck` and `npm run build` clean.
+    The full flow works end to end: Recommendations → "How was this
+    recommendation produced?" → a labeled debug/transparency view
+    showing discovery → enrichment → ranking → recommendation, and
+    (once a provider has been selected) the questions identified and
+    simulated-answer count — satisfying the assignment's exact bonus
+    wording ("an agent trace/debug **view**"), not just an API
+    response. Not manually walked through against a live backend by
+    Claude this session (same non-blocking precedent as other
+    frontend-facing work in this project — see M15's own note).
 - M2 (domain models & conversation state) is complete.
 - Task 05 (Gemini client wrapper) is complete; this is shared
   plumbing, not itself a milestone.

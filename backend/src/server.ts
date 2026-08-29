@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { z } from "zod";
 import { createSession, getSession, updateSession } from "./store/sessionStore.js";
+import { appendTraceEvents, getTrace } from "./store/traceStore.js";
 import { orchestrateMessage, type OrchestrateMessageParams } from "./conversation/orchestrateMessage.js";
 import { runSerialized } from "./conversation/sessionQueue.js";
 import {
@@ -132,8 +133,9 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
     }
 
     try {
-      const providers = await generateList({ state });
-      return { providers };
+      const result = await generateList({ state });
+      appendTraceEvents(request.params.id, result.trace);
+      return { providers: result.providers };
     } catch (error) {
       if (error instanceof GeminiRateLimitError || error instanceof FirecrawlRateLimitError) {
         app.log.error(error);
@@ -176,8 +178,9 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
     }
 
     try {
-      const answers = await select({ candidate: parsedBody.data.candidate, state });
-      return { answers };
+      const result = await select({ candidate: parsedBody.data.candidate, state });
+      appendTraceEvents(request.params.id, result.trace);
+      return { answers: result.answers };
     } catch (error) {
       if (error instanceof GeminiRateLimitError) {
         app.log.error(error);
@@ -197,6 +200,15 @@ export function buildServer(deps: BuildServerDeps = {}): FastifyInstance {
       reply.code(500);
       return { error: "Unexpected server error." };
     }
+  });
+
+  app.get<{ Params: { id: string } }>("/conversation/:id/trace", async (request, reply) => {
+    const state = getSession(request.params.id);
+    if (!state) {
+      reply.code(404);
+      return { error: "Session not found" };
+    }
+    return { events: getTrace(request.params.id) };
   });
 
   return app;

@@ -37,9 +37,18 @@ function deriveRating(candidate: ProviderCandidate): string {
 export interface RecommendationsScreenProps {
   providers: ProviderScore[];
   onSelectRow: (provider: ProviderScore) => void;
+  onViewTrace: () => void;
 }
 
-export function RecommendationsScreen({ providers, onSelectRow }: RecommendationsScreenProps) {
+function TraceLink({ onViewTrace }: { onViewTrace: () => void }) {
+  return (
+    <Pressable testID="view-trace-link" onPress={onViewTrace} style={styles.traceLink}>
+      <Text style={styles.traceLinkText}>How was this recommendation produced?</Text>
+    </Pressable>
+  );
+}
+
+export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: RecommendationsScreenProps) {
   if (providers.length === 0) {
     return (
       <ScrollView testID="recommendations-screen" style={styles.container}>
@@ -48,6 +57,7 @@ export function RecommendationsScreen({ providers, onSelectRow }: Recommendation
             No matching providers found. Try adjusting your requirements and searching again.
           </Text>
         </View>
+        <TraceLink onViewTrace={onViewTrace} />
       </ScrollView>
     );
   }
@@ -58,6 +68,7 @@ export function RecommendationsScreen({ providers, onSelectRow }: Recommendation
       <View testID="sort-control" style={styles.sortRow}>
         <Text style={styles.sortLabel}>Sort: Best match</Text>
       </View>
+      <TraceLink onViewTrace={onViewTrace} />
 
       {providers.map((provider, index) => {
         const { candidate } = provider;
@@ -130,5 +141,13 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: "700",
     fontSize: 16,
+  },
+  traceLink: {
+    padding: 12,
+  },
+  traceLinkText: {
+    color: "#4b5563",
+    fontSize: 13,
+    textDecorationLine: "underline",
   },
 });

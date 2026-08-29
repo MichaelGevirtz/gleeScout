@@ -75,7 +75,56 @@ describe("generateProviderList", () => {
       location: "Austin, TX",
       categoryAttributes: state.categoryAttributes,
     });
-    expect(result).toBe(ranked);
+    expect(result.providers).toBe(ranked);
+  });
+
+  it("returns a trace describing discovery, enrichment, and ranking", async () => {
+    const withSignal = { ...candidate("https://a.example"), inferred: [{ value: "great with kids", evidenceSourceUrl: "https://reviews.example", sourceType: "google" as const, retrievedAt: "2026-08-28T00:00:00.000Z" }] };
+    const noSignalFound = { ...candidate("https://b.example"), inferred: [] };
+    const notEnriched = candidate("https://c.example");
+    const enriched = [withSignal, noSignalFound, notEnriched];
+    const ranked: ProviderScore[] = [
+      {
+        candidate: withSignal,
+        score: 0.75,
+        dimensionScores: {
+          requirementMatch: 0.8,
+          geoFit: 1,
+          priceFit: 0.7,
+          reputation: 0.9,
+          evidenceQuality: 0.8,
+        },
+        explanation: "test explanation",
+      },
+    ];
+
+    const discover: DiscoverFn = async () => [withSignal, noSignalFound, notEnriched];
+    const enrich: EnrichFn = async () => enriched;
+    const rank: RankFn = () => ranked;
+
+    const state = readyState();
+    const { trace } = await generateProviderList({ state, discover, enrich, rank });
+
+    const discoverEvent = trace.find((e) => e.step === "discover");
+    expect(discoverEvent?.detail).toEqual({
+      query: expect.stringContaining("Austin, TX"),
+      candidatesFound: 3,
+    });
+
+    const enrichEvent = trace.find((e) => e.step === "enrich");
+    expect(enrichEvent?.detail).toEqual({
+      enrichedWithSignal: 1,
+      enrichedNoSignalFound: 1,
+      notEnriched: 1,
+    });
+
+    const rankEvent = trace.find((e) => e.step === "rank");
+    expect(rankEvent?.detail).toEqual({
+      scores: [{ provider: "a.example", score: 0.75, dimensionScores: ranked[0]!.dimensionScores }],
+    });
+
+    const recommendEvent = trace.find((e) => e.step === "recommend");
+    expect(recommendEvent?.detail).toEqual({ count: 1 });
   });
 
   it("throws a clear error and never calls discover/enrich/rank when serviceCategory is null", async () => {

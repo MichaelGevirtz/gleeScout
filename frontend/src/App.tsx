@@ -2,18 +2,25 @@ import { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSession } from "./hooks/useSession";
 import { useIsDesktop } from "./hooks/useIsDesktop";
-import { fetchProviders, selectProvider } from "./api/client";
+import { fetchProviders, fetchTrace, selectProvider } from "./api/client";
 import { ChatScreen } from "./screens/ChatScreen";
 import TransitionScreen from "./screens/TransitionScreen";
 import { RecommendationsScreen } from "./screens/RecommendationsScreen";
 import ProviderDetailsScreen from "./screens/ProviderDetailsScreen";
 import { SimulatedQAScreen } from "./screens/SimulatedQAScreen";
+import { TraceScreen } from "./screens/TraceScreen";
 import ErrorState from "./components/ErrorState";
 import ContextPanel from "./components/ContextPanel";
-import type { ProviderCandidate, ProviderScore, SimulatedAnswer } from "./domain/types";
+import type { ProviderCandidate, ProviderScore, SimulatedAnswer, TraceEvent } from "./domain/types";
 import { hostnameFromUrl } from "./shared/hostname";
 
-type Screen = "chat" | "transitionLoading" | "recommendations" | "providerDetails" | "simulatedQA";
+type Screen =
+  | "chat"
+  | "transitionLoading"
+  | "recommendations"
+  | "providerDetails"
+  | "simulatedQA"
+  | "trace";
 
 interface ErrorContext {
   message: string;
@@ -32,6 +39,7 @@ export default function App() {
   const [providers, setProviders] = useState<ProviderScore[] | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<ProviderScore | null>(null);
   const [answers, setAnswers] = useState<SimulatedAnswer[] | null>(null);
+  const [traceEvents, setTraceEvents] = useState<TraceEvent[] | null>(null);
   const [errorContext, setErrorContext] = useState<ErrorContext | null>(null);
 
   // Guards the resume-into-an-already-ready-session case (app relaunched
@@ -110,6 +118,23 @@ export default function App() {
     setScreen("recommendations");
   }, []);
 
+  const runFetchTrace = useCallback(() => {
+    const sessionId = session.sessionId;
+    if (!sessionId) {
+      return;
+    }
+    setErrorContext(null);
+    setTraceEvents(null);
+    setScreen("trace");
+    fetchTrace(sessionId)
+      .then(({ events }) => {
+        setTraceEvents(events);
+      })
+      .catch((error: unknown) => {
+        setErrorContext({ message: errorMessage(error), retry: runFetchTrace });
+      });
+  }, [session.sessionId]);
+
   const handleOpenChat = useCallback(() => {
     setScreen("chat");
   }, []);
@@ -134,7 +159,20 @@ export default function App() {
   } else if (screen === "transitionLoading") {
     content = <TransitionScreen />;
   } else if (screen === "recommendations") {
-    content = <RecommendationsScreen providers={providers ?? []} onSelectRow={handleSelectRow} />;
+    content = (
+      <RecommendationsScreen
+        providers={providers ?? []}
+        onSelectRow={handleSelectRow}
+        onViewTrace={runFetchTrace}
+      />
+    );
+  } else if (screen === "trace") {
+    content =
+      traceEvents === null ? (
+        <TransitionScreen />
+      ) : (
+        <TraceScreen events={traceEvents} onBack={handleBackToMatches} />
+      );
   } else if (screen === "providerDetails" && selectedProvider) {
     content = (
       <ProviderDetailsScreen

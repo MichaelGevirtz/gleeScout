@@ -1,4 +1,10 @@
-import type { ConversationState, ProviderCandidate, ProviderScore, SimulatedAnswer } from "../domain/types";
+import type {
+  ConversationState,
+  ProviderCandidate,
+  ProviderScore,
+  SimulatedAnswer,
+  TraceEvent,
+} from "../domain/types";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -70,4 +76,8 @@ export function selectProvider(
     method: "POST",
     body: JSON.stringify({ candidate }),
   });
+}
+
+export function fetchTrace(sessionId: string): Promise<{ events: TraceEvent[] }> {
+  return request(`/conversation/${sessionId}/trace`, { method: "GET" });
 }

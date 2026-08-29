@@ -2,8 +2,14 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import App from "./App";
 import { useSession } from "./hooks/useSession";
 import { useIsDesktop } from "./hooks/useIsDesktop";
-import { fetchProviders, selectProvider } from "./api/client";
-import type { ConversationState, ProviderCandidate, ProviderScore, SimulatedAnswer } from "./domain/types";
+import { fetchProviders, fetchTrace, selectProvider } from "./api/client";
+import type {
+  ConversationState,
+  ProviderCandidate,
+  ProviderScore,
+  SimulatedAnswer,
+  TraceEvent,
+} from "./domain/types";
 
 jest.mock("./hooks/useSession", () => ({ useSession: jest.fn() }));
 jest.mock("./hooks/useIsDesktop", () => ({ useIsDesktop: jest.fn() }));
@@ -11,12 +17,14 @@ jest.mock("./api/client", () => ({
   ...jest.requireActual("./api/client"),
   fetchProviders: jest.fn(),
   selectProvider: jest.fn(),
+  fetchTrace: jest.fn(),
 }));
 
 const mockedUseSession = useSession as jest.Mock;
 const mockedUseIsDesktop = useIsDesktop as jest.Mock;
 const mockedFetchProviders = fetchProviders as jest.Mock;
 const mockedSelectProvider = selectProvider as jest.Mock;
+const mockedFetchTrace = fetchTrace as jest.Mock;
 
 const gatheringState: ConversationState = {
   sessionId: "s1",
@@ -255,6 +263,116 @@ describe("recommendations -> details -> select -> answers -> back", () => {
 
     expect(screen.getByTestId("recommendations-screen")).toBeTruthy();
     expect(mockedFetchProviders).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("recommendations -> trace -> back", () => {
+  async function reachRecommendations() {
+    const sendMessage = mockSession();
+    sendMessage.mockResolvedValueOnce(readyState);
+    const provider = providerScoreFixture("https://a.com", "A");
+    mockedFetchProviders.mockResolvedValueOnce({ providers: [provider] });
+
+    await render(<App />);
+    await fireEvent.changeText(screen.getByTestId("chat-input"), "Saturday");
+    await fireEvent.press(screen.getByTestId("chat-send"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("recommendations-screen")).toBeTruthy();
+    return provider;
+  }
+
+  const fakeEvents: TraceEvent[] = [
+    {
+      step: "discover",
+      summary: "Searched for providers",
+      detail: { query: "bounce house in Austin, TX", candidatesFound: 3 },
+      timestamp: "2026-08-29T00:00:00.000Z",
+    },
+  ];
+
+  it("pressing the trace link navigates to the trace screen, showing loading then results", async () => {
+    await reachRecommendations();
+    let resolveFetch: (value: { events: TraceEvent[] }) => void = () => {};
+    mockedFetchTrace.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    await fireEvent.press(screen.getByTestId("view-trace-link"));
+
+    expect(mockedFetchTrace).toHaveBeenCalledWith("s1");
+    expect(screen.getByTestId("step-searching")).toBeTruthy();
+
+    await act(async () => {
+      resolveFetch({ events: fakeEvents });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("trace-screen")).toBeTruthy();
+  });
+
+  it("shows ErrorState on fetchTrace failure, and retry re-issues the same call", async () => {
+    await reachRecommendations();
+    mockedFetchTrace.mockRejectedValueOnce(new Error("trace unavailable"));
+
+    await fireEvent.press(screen.getByTestId("view-trace-link"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("error-message").props.children).toBe("trace unavailable");
+
+    mockedFetchTrace.mockResolvedValueOnce({ events: fakeEvents });
+    await fireEvent.press(screen.getByTestId("error-retry"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockedFetchTrace).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId("trace-screen")).toBeTruthy();
+  });
+
+  it("back from the trace screen returns to Recommendations without calling fetchProviders again", async () => {
+    await reachRecommendations();
+    mockedFetchTrace.mockResolvedValueOnce({ events: fakeEvents });
+
+    await fireEvent.press(screen.getByTestId("view-trace-link"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("trace-screen")).toBeTruthy();
+    expect(mockedFetchProviders).toHaveBeenCalledTimes(1);
+
+    await fireEvent.press(screen.getByTestId("trace-back-button"));
+
+    expect(screen.getByTestId("recommendations-screen")).toBeTruthy();
+    expect(mockedFetchProviders).toHaveBeenCalledTimes(1);
+  });
+
+  it("desktop: the trace screen renders inside the split-pane right pane with ContextPanel staying mounted", async () => {
+    mockedUseIsDesktop.mockReturnValue(true);
+    await reachRecommendations();
+    mockedFetchTrace.mockResolvedValueOnce({ events: fakeEvents });
+
+    expect(screen.getByTestId("context-panel")).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("view-trace-link"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("trace-screen")).toBeTruthy();
+    expect(screen.getByTestId("context-panel")).toBeTruthy();
   });
 });
 

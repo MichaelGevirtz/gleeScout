@@ -45,7 +45,35 @@ describe("selectProvider", () => {
     expect(capturedSimulateParams?.state).toBe(s);
     expect(typeof capturedSimulateParams?.generatedAt).toBe("string");
     expect(() => new Date(capturedSimulateParams!.generatedAt).toISOString()).not.toThrow();
-    expect(result).toBe(answers);
+    expect(result.answers).toBe(answers);
+  });
+
+  it("returns a trace describing the questions identified and the simulated-answer count", async () => {
+    const questions = ["Are you available Saturday?", "Does the price include setup?"];
+    const answers: { question: string; answer: Simulated<string> }[] = [
+      { question: questions[0]!, answer: { value: "Yes", generatedAt: "2026-08-28T00:00:00.000Z" } },
+      { question: questions[1]!, answer: { value: "Yes, setup is included", generatedAt: "2026-08-28T00:00:00.000Z" } },
+    ];
+    const prepareQuestions: PrepareQuestionsFn = async () => questions;
+    const simulate: SimulateFn = async () => answers;
+
+    const { trace } = await selectProvider({ candidate, state: state(), prepareQuestions, simulate });
+
+    const prepareEvent = trace.find((e) => e.step === "prepareQuestions");
+    expect(prepareEvent?.detail).toEqual({ questions });
+
+    const simulateEvent = trace.find((e) => e.step === "simulateAnswers");
+    expect(simulateEvent?.detail).toEqual({ answerCount: 2 });
+  });
+
+  it("still reports a prepareQuestions event with 0 questions when nothing is missing", async () => {
+    const prepareQuestions: PrepareQuestionsFn = async () => [];
+    const simulate: SimulateFn = async () => [];
+
+    const { trace } = await selectProvider({ candidate, state: state(), prepareQuestions, simulate });
+
+    const prepareEvent = trace.find((e) => e.step === "prepareQuestions");
+    expect(prepareEvent?.detail).toEqual({ questions: [] });
   });
 
   it("propagates a rejection from prepareQuestions without swallowing it, and never calls simulate", async () => {

@@ -62,7 +62,7 @@ function makeProvider(overrides: Partial<ProviderScore> = {}): ProviderScore {
 describe("RecommendationsScreen", () => {
   it("renders exactly providers.length rows for a 1-provider fixture, no extras", async () => {
     const providers = [makeProvider()];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0")).toBeTruthy();
     expect(screen.queryByTestId("provider-row-1")).toBeNull();
@@ -70,7 +70,7 @@ describe("RecommendationsScreen", () => {
 
   it("renders exactly providers.length rows for a 3-provider fixture, no extras", async () => {
     const providers = [makeProvider(), makeProvider(), makeProvider()];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0")).toBeTruthy();
     expect(screen.getByTestId("provider-row-1")).toBeTruthy();
@@ -86,7 +86,7 @@ describe("RecommendationsScreen", () => {
       makeProvider(),
       makeProvider(),
     ];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     for (let i = 0; i < 5; i += 1) {
       expect(screen.getByTestId(`provider-row-${i}`)).toBeTruthy();
@@ -102,7 +102,7 @@ describe("RecommendationsScreen", () => {
         }),
       }),
     ];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0-name")).toHaveTextContent("Acme Catering");
   });
@@ -116,7 +116,7 @@ describe("RecommendationsScreen", () => {
         }),
       }),
     ];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0-name")).toHaveTextContent("no-name-provider.com");
   });
@@ -129,7 +129,7 @@ describe("RecommendationsScreen", () => {
         }),
       }),
     ];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0-price")).toHaveTextContent("—");
   });
@@ -154,7 +154,7 @@ describe("RecommendationsScreen", () => {
         },
       }),
     ];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0-facts")).toHaveTextContent("3 facts sourced");
     expect(screen.getByTestId("provider-row-0-inferred")).toHaveTextContent("2 inferred");
@@ -164,7 +164,7 @@ describe("RecommendationsScreen", () => {
   it("renders the explanation verbatim as the one-line rationale", async () => {
     const explanation = "Ranks highly due to exact date match and top-tier reviews.";
     const providers = [makeProvider({ explanation })];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} />);
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("provider-row-0-rationale")).toHaveTextContent(explanation);
   });
@@ -172,7 +172,9 @@ describe("RecommendationsScreen", () => {
   it("calls onSelectRow with the exact same ProviderScore object on tap, unreshaped", async () => {
     const providers = [makeProvider(), makeProvider()];
     const onSelectRow = jest.fn();
-    await render(<RecommendationsScreen providers={providers} onSelectRow={onSelectRow} />);
+    await render(
+      <RecommendationsScreen providers={providers} onSelectRow={onSelectRow} onViewTrace={jest.fn()} />
+    );
 
     await fireEvent.press(screen.getByTestId("provider-row-1"));
 
@@ -182,10 +184,33 @@ describe("RecommendationsScreen", () => {
 
   it("renders an empty-state message and no rows when providers is empty", async () => {
     const onSelectRow = jest.fn();
-    await render(<RecommendationsScreen providers={[]} onSelectRow={onSelectRow} />);
+    await render(
+      <RecommendationsScreen providers={[]} onSelectRow={onSelectRow} onViewTrace={jest.fn()} />
+    );
 
     expect(screen.getByTestId("recommendations-empty")).toBeTruthy();
     expect(screen.queryByTestId("provider-row-0")).toBeNull();
     expect(screen.queryByTestId("sort-control")).toBeNull();
+  });
+
+  it("renders the trace link and calls onViewTrace when pressed, with providers present", async () => {
+    const providers = [makeProvider()];
+    const onViewTrace = jest.fn();
+    await render(
+      <RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={onViewTrace} />
+    );
+
+    await fireEvent.press(screen.getByTestId("view-trace-link"));
+
+    expect(onViewTrace).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the trace link and calls onViewTrace when pressed, with an empty providers list", async () => {
+    const onViewTrace = jest.fn();
+    await render(<RecommendationsScreen providers={[]} onSelectRow={jest.fn()} onViewTrace={onViewTrace} />);
+
+    await fireEvent.press(screen.getByTestId("view-trace-link"));
+
+    expect(onViewTrace).toHaveBeenCalledTimes(1);
   });
 });

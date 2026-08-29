@@ -7,6 +7,7 @@ import {
 } from "./server.js";
 import { GeminiRateLimitError, GeminiValidationError } from "./llm/geminiClient.js";
 import { FirecrawlConfigError, FirecrawlRateLimitError } from "./research/firecrawlProvider.js";
+import { getTrace } from "./store/traceStore.js";
 import { createInitialState, type ConversationState } from "./domain/conversation.js";
 import type { ProviderCandidate } from "./domain/provider.js";
 import type { Simulated } from "./domain/evidence.js";
@@ -374,9 +375,10 @@ describe("POST /conversation/:id/providers", () => {
     // ready_for_search" test already uses.
     let capturedState: ConversationState | undefined;
     const orchestrate = async ({ state }: { state: ConversationState }) => readyState(state.sessionId);
+    const fakeTrace = [{ step: "discover", summary: "test", timestamp: "2026-08-29T00:00:00.000Z" }];
     const generateList: GenerateProviderListFn = async ({ state }) => {
       capturedState = state;
-      return fakeProviders;
+      return { providers: fakeProviders, trace: fakeTrace };
     };
     const app = buildServer({ orchestrate, generateList });
     const created = await app.inject({ method: "POST", url: "/conversation" });
@@ -392,6 +394,7 @@ describe("POST /conversation/:id/providers", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ providers: fakeProviders });
     expect(capturedState?.sessionId).toBe(sessionId);
+    expect(getTrace(sessionId)).toEqual(fakeTrace);
   });
 
   it("returns 502 with a generic body when generateList rejects with a known Gemini error", async () => {
@@ -516,10 +519,11 @@ describe("POST /conversation/:id/providers/select", () => {
   it("returns 200 with { answers } from a faked selectProvider for a valid session + valid candidate body", async () => {
     let capturedCandidate: ProviderCandidate | undefined;
     let capturedStateSessionId: string | undefined;
+    const fakeTrace = [{ step: "prepareQuestions", summary: "test", timestamp: "2026-08-29T00:00:00.000Z" }];
     const selectProviderFn: SelectProviderFn = async ({ candidate, state }) => {
       capturedCandidate = candidate;
       capturedStateSessionId = state.sessionId;
-      return fakeAnswers;
+      return { answers: fakeAnswers, trace: fakeTrace };
     };
     const app = buildServer({ selectProvider: selectProviderFn });
     const created = await app.inject({ method: "POST", url: "/conversation" });
@@ -535,6 +539,7 @@ describe("POST /conversation/:id/providers/select", () => {
     expect(response.json()).toEqual({ answers: fakeAnswers });
     expect(capturedCandidate).toEqual(validCandidate);
     expect(capturedStateSessionId).toBe(sessionId);
+    expect(getTrace(sessionId)).toEqual(fakeTrace);
   });
 
   it("returns 502 with a generic body when selectProvider rejects with a known Gemini error", async () => {
@@ -589,5 +594,51 @@ describe("POST /conversation/:id/providers/select", () => {
 
     expect(response.statusCode).toBe(500);
     expect(response.json().error).not.toContain("unexpected internal failure detail");
+  });
+});
+
+describe("GET /conversation/:id/trace", () => {
+  it("returns 404 for an unknown session id", async () => {
+    const app = buildServer();
+
+    const response = await app.inject({ method: "GET", url: "/conversation/does-not-exist/trace" });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  it("returns 200 with an empty events array for a known session with no trace yet", async () => {
+    const app = buildServer();
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const { sessionId } = created.json();
+
+    const response = await app.inject({ method: "GET", url: `/conversation/${sessionId}/trace` });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ events: [] });
+  });
+
+  it("returns exactly what a prior /providers call wrote to the trace store", async () => {
+    const fakeTrace = [{ step: "discover", summary: "test", timestamp: "2026-08-29T00:00:00.000Z" }];
+    const orchestrate = async ({ state }: { state: ConversationState }): Promise<ConversationState> => ({
+      ...createInitialState(state.sessionId),
+      phase: "ready_for_search",
+      serviceCategory: "bounce house rental",
+      coreAttributes: { dateTime: "next Saturday", location: "Austin, TX" },
+    });
+    const generateList: GenerateProviderListFn = async () => ({ providers: [], trace: fakeTrace });
+    const app = buildServer({ orchestrate, generateList });
+    const created = await app.inject({ method: "POST", url: "/conversation" });
+    const { sessionId } = created.json();
+    await app.inject({
+      method: "POST",
+      url: `/conversation/${sessionId}/message`,
+      payload: { message: "anything" },
+    });
+    await app.inject({ method: "POST", url: `/conversation/${sessionId}/providers` });
+
+    const response = await app.inject({ method: "GET", url: `/conversation/${sessionId}/trace` });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ events: fakeTrace });
   });
 });

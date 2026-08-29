@@ -257,6 +257,31 @@ bonus; a simple in-memory list is low-cost and directly supports the
 "how does the agent decide what to do next" evaluation criterion
 without over-building.
 
+**Addendum (2026-08-29, M13 kickoff)**: two corrections made before
+M13's first task was written, both against a direct re-read of the
+assignment PDF rather than this decision's original paraphrase:
+
+1. **Scope narrowed.** The bonus text is "how **the recommendation**
+   was produced," not "how the whole conversation was conducted."
+   This entry's original wording ("each orchestrator step") was
+   broader than that. M13 traces exactly the two functions that
+   produce a recommendation — `generateProviderList` (M7 discovery →
+   M8 enrichment → M9 ranking) and `selectProvider` (M10 gap analysis
+   → M11 simulation) — not the M3/M4/M5 requirement-gathering
+   conversation turns.
+2. **Scope widened, per direct user instruction.** "Debug endpoint" (a
+   JSON API only) does not satisfy "debug/**view**" literally. M13 now
+   also includes a small human-readable frontend `TraceScreen`
+   (presentational, prop-driven, reachable from the Recommendations
+   screen), not just the endpoint. Still explicitly a bonus/cut-first
+   item — the widening adds one more small presentational task
+   (task-73), not a redesign of the main UX.
+
+**M13 is now fully complete** (2026-08-29) — see
+`memory-bank/progress.md`'s M13 section for the full six-task
+breakdown (tasks 69-74, all `DONE`) and `tasks/completed/task-69-*`
+through `task-74-*` for each task's detail.
+
 ## D11 — Per-session request serialization belongs to M5 orchestration, not the session store
 
 **Decision**: The session store (Task 04) stays a plain

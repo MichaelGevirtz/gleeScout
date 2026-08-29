@@ -89,3 +89,10 @@ export interface SimulatedAnswer {
   question: string;
   answer: Simulated<string>;
 }
+
+export interface TraceEvent {
+  step: string;
+  summary: string;
+  detail?: Record<string, unknown>;
+  timestamp: string;
+}

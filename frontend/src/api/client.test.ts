@@ -2,6 +2,7 @@ import {
   ApiError,
   createConversation,
   fetchProviders,
+  fetchTrace,
   getConversation,
   selectProvider,
   sendMessage,
@@ -84,6 +85,18 @@ describe("fetchProviders", () => {
   });
 });
 
+describe("fetchTrace", () => {
+  it("returns events on success", async () => {
+    mockFetchOnce(200, { events: [] });
+    await expect(fetchTrace("s1")).resolves.toEqual({ events: [] });
+  });
+
+  it("throws ApiError with status 404 on failure", async () => {
+    mockFetchOnce(404, { error: "Session not found" });
+    await expect(fetchTrace("s1")).rejects.toMatchObject({ status: 404 });
+  });
+});
+
 describe("selectProvider", () => {
   it("returns answers on success", async () => {
     mockFetchOnce(200, { answers: [] });
@@ -117,6 +130,12 @@ describe("Content-Type header", () => {
   it("fetchProviders (bodyless POST) omits Content-Type", async () => {
     mockFetchOnce(200, { providers: [] });
     await fetchProviders("s1");
+    expect(headersOf()["Content-Type"]).toBeUndefined();
+  });
+
+  it("fetchTrace (bodyless GET) omits Content-Type", async () => {
+    mockFetchOnce(200, { events: [] });
+    await fetchTrace("s1");
     expect(headersOf()["Content-Type"]).toBeUndefined();
   });
 
