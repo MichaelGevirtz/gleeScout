@@ -26,5 +26,7 @@ export const ProviderCandidateSchema = z.object({
   url: z.string().url(),
   fields: ProviderCandidateFieldsSchema,
   inferred: z.array(InferredSchema(z.string())).optional(),
+  reputationRating: z.number().min(1).max(5).optional(),
+  reputationReviewCount: z.number().int().min(10).max(1000).optional(),
 });
 export type ProviderCandidate = z.infer<typeof ProviderCandidateSchema>;

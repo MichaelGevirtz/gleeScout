@@ -87,4 +87,22 @@ describe("ContextPanel", () => {
 
     expect(onBackToMatches).toHaveBeenCalledTimes(1);
   });
+
+  it("omits the scoring-explanation affordance when onExplainScoring is not supplied", async () => {
+    await render(<ContextPanel {...baseProps()} />);
+
+    expect(screen.queryByTestId("context-explain-scoring")).toBeNull();
+  });
+
+  it("renders 'How we score providers' and calls onExplainScoring on press when supplied", async () => {
+    const onExplainScoring = jest.fn();
+    await render(<ContextPanel {...baseProps()} onExplainScoring={onExplainScoring} />);
+
+    const link = screen.getByTestId("context-explain-scoring");
+    expect(link).toHaveTextContent("How we score providers");
+
+    await fireEvent.press(link);
+
+    expect(onExplainScoring).toHaveBeenCalledTimes(1);
+  });
 });

@@ -69,6 +69,8 @@ export interface ProviderCandidate {
   url: string;
   fields: ProviderCandidateFields;
   inferred?: Inferred<string>[];
+  reputationRating?: number;
+  reputationReviewCount?: number;
 }
 
 export type RankingDimension =
@@ -78,11 +80,15 @@ export type RankingDimension =
   | "reputation"
   | "evidenceQuality";
 
+export type MatchGrade = "wonderful" | "good" | "average" | "poor" | "insufficient_data";
+
 export interface ProviderScore {
   candidate: ProviderCandidate;
   score: number;
   dimensionScores: Record<RankingDimension, number | null>;
   explanation: string;
+  fitScore: number | null;
+  matchGrade: MatchGrade;
 }
 
 export interface SimulatedAnswer {

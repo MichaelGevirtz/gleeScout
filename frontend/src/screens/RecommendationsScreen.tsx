@@ -5,33 +5,42 @@ import type {
   ProviderScore,
 } from "../domain/types";
 import { hostnameFromUrl } from "../shared/hostname";
-
-const EM_DASH = "—";
-const DIMENSION_COUNT = 5;
+import { MatchGradeBadge } from "../components/MatchGradeBadge";
 
 function countFactsSourced(fields: ProviderCandidateFields): number {
   return Object.values(fields).filter((value) => value != null).length;
-}
-
-function countSignals(dimensionScores: ProviderScore["dimensionScores"]): number {
-  return Object.values(dimensionScores).filter((value) => value != null).length;
 }
 
 function deriveName(candidate: ProviderCandidate): string {
   return candidate.fields.name?.value ?? hostnameFromUrl(candidate.url);
 }
 
-function derivePrice(candidate: ProviderCandidate): string {
-  return candidate.fields.pricing?.value ?? EM_DASH;
+function derivePrice(candidate: ProviderCandidate): string | undefined {
+  return candidate.fields.pricing?.value;
 }
 
-function deriveRating(candidate: ProviderCandidate): string {
+function deriveLocation(candidate: ProviderCandidate): string | undefined {
+  return candidate.fields.location?.value;
+}
+
+function deriveRating(candidate: ProviderCandidate): string | undefined {
   const rating = candidate.fields.rating?.value;
   if (rating == null) {
-    return EM_DASH;
+    return undefined;
   }
   const reviewCount = candidate.fields.reviewCount?.value;
   return reviewCount != null ? `${rating} (${reviewCount} reviews)` : `${rating}`;
+}
+
+// reputationRating/reputationReviewCount are a blended average of two
+// fabricated mock lookups (never real Google/Yelp data) — always
+// labeled "(simulated)" and never merged with the FACT rating line.
+function deriveMockReputation(candidate: ProviderCandidate): string | undefined {
+  const { reputationRating, reputationReviewCount } = candidate;
+  if (reputationRating == null || reputationReviewCount == null) {
+    return undefined;
+  }
+  return `${reputationRating} · ${reputationReviewCount} reviews (simulated)`;
 }
 
 export interface RecommendationsScreenProps {
@@ -87,7 +96,9 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
         const rank = index + 1;
         const factsSourced = countFactsSourced(candidate.fields);
         const inferredCount = candidate.inferred?.length ?? 0;
-        const signals = countSignals(provider.dimensionScores);
+        const price = derivePrice(candidate);
+        const location = deriveLocation(candidate);
+        const rating = deriveMockReputation(candidate) ?? deriveRating(candidate);
 
         return (
           <Pressable
@@ -102,14 +113,36 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
                 {deriveName(candidate)}
               </Text>
             </View>
-            <Text testID={`provider-row-${index}-price`}>{derivePrice(candidate)}</Text>
-            <Text testID={`provider-row-${index}-rating`}>{deriveRating(candidate)}</Text>
-            <Text testID={`provider-row-${index}-facts`}>{factsSourced} facts sourced</Text>
-            <Text testID={`provider-row-${index}-inferred`}>{inferredCount} inferred</Text>
-            <Text testID={`provider-row-${index}-signals`}>
-              Signals: {signals} / {DIMENSION_COUNT}
+
+            <MatchGradeBadge grade={provider.matchGrade} />
+
+            <Text testID={`provider-row-${index}-rationale`} style={styles.rationale}>
+              {provider.explanation}
             </Text>
-            <Text testID={`provider-row-${index}-rationale`}>{provider.explanation}</Text>
+
+            {(price || location) && (
+              <View style={styles.decisionRow}>
+                {price && <Text testID={`provider-row-${index}-price`}>{price}</Text>}
+                {location && <Text testID={`provider-row-${index}-location`}>{location}</Text>}
+              </View>
+            )}
+
+            {rating && (
+              <Text testID={`provider-row-${index}-rating`} style={styles.reputation}>
+                ★ {rating}
+              </Text>
+            )}
+
+            <View style={styles.decisionRow}>
+              <Text testID={`provider-row-${index}-facts`} style={styles.evidence}>
+                {factsSourced} facts sourced
+              </Text>
+              <Text testID={`provider-row-${index}-inferred`} style={styles.evidence}>
+                {inferredCount} inferred
+              </Text>
+            </View>
+
+            <Text style={styles.viewDetails}>View details</Text>
           </Pressable>
         );
       })}
@@ -172,11 +205,11 @@ const styles = StyleSheet.create({
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
+    gap: 6,
   },
   rowHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
   },
   rank: {
     fontWeight: "700",
@@ -185,6 +218,28 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: "700",
     fontSize: 16,
+  },
+  rationale: {
+    fontSize: 13,
+    color: "#374151",
+  },
+  decisionRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  reputation: {
+    fontSize: 13,
+    color: "#374151",
+  },
+  evidence: {
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+  viewDetails: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#4338ca",
+    alignSelf: "flex-end",
   },
   traceLink: {
     padding: 12,

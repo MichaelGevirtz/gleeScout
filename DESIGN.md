@@ -34,6 +34,14 @@ than being written after the fact.
   once a provider is selected — trading strict fidelity to the example
   layout for not spending several LLM simulation calls on candidates
   the user may never look at twice.
+- Every provider card also shows a second, clearly labeled
+  "(simulated)" reputation number — a deterministic blend of two
+  fabricated mock lookups standing in for a Google-like and a
+  Yelp-like source. This is a cosmetic, portfolio-completeness touch,
+  not a real Google/Yelp integration and not a claim that either
+  platform was queried; it never overwrites or merges with the
+  existing FACT rating pulled from the provider's own site, and it
+  plays no role in ranking or the match grade.
 - Selecting a provider means the client sends back the exact provider
   data it was already given in the list response; the server doesn't
   re-verify that data against what it originally returned. In a
@@ -118,6 +126,17 @@ than being written after the fact.
   than renormalizing down to just one — otherwise evidence-quality
   alone (which is never missing) could carry the entire score for a
   candidate with no validated fit to what the user actually asked for.
+- The provider card's user-facing match grade (Wonderful/Good/Average/
+  Poor) is a deliberately narrower number than the overall ranking
+  score: it's built only from how well a provider matches the user's
+  stated requirements (service fit, location, price), leaving out
+  reputation and evidence completeness entirely — a well-reviewed or
+  well-documented provider isn't a "better match" for what the user
+  specifically asked for, so those two stay visible on the card as
+  their own separate signals instead of quietly inflating the grade.
+  A provider with too little data on those three fit dimensions gets
+  an honest "not enough information" label rather than being folded
+  into "poor," which would misrepresent missing data as a bad fit.
 - The "why this provider ranks where it does" explanation shown to a
   user is built from plain deterministic sentence templates over the
   already-computed dimension scores, not a separate LLM call — it

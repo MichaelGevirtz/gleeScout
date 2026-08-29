@@ -192,6 +192,30 @@ describe("ProviderDetailsScreen — dimension bars", () => {
     ]);
   });
 
+  it("groups requirementMatch/geoFit/priceFit under 'Requirement fit' and reputation/evidenceQuality under 'Reputation & evidence'", async () => {
+    await render(
+      <ProviderDetailsScreen
+        candidate={fullCandidate}
+        dimensionScores={fullDimensionScores}
+        explanation="Matches your requirements well."
+        onSelectProvider={noop}
+      />,
+    );
+
+    const fitGroup = screen.getByTestId("dimension-group-fit");
+    const qualityGroup = screen.getByTestId("dimension-group-quality");
+
+    for (const dimension of ["requirementMatch", "geoFit", "priceFit"]) {
+      expect(within(fitGroup).getByTestId(`dimension-bar-${dimension}`)).toBeTruthy();
+    }
+    for (const dimension of ["reputation", "evidenceQuality"]) {
+      expect(within(qualityGroup).getByTestId(`dimension-bar-${dimension}`)).toBeTruthy();
+    }
+    expect(screen.getByTestId("dimension-group-quality-caption")).toHaveTextContent(
+      /affect the match grade/,
+    );
+  });
+
   it("renders a dashed 'not enough data' state for a null dimension, never a 0-width bar", async () => {
     const scoresWithNull: Record<RankingDimension, number | null> = {
       ...fullDimensionScores,

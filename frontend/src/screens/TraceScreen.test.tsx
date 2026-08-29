@@ -11,7 +11,7 @@ function discoverEvent(): TraceEvent {
   };
 }
 
-function rankEvent(): TraceEvent {
+function rankEvent(overrides: Partial<{ fitScore: number | null; matchGrade: string; explanation: string }> = {}): TraceEvent {
   return {
     step: "rank",
     summary: "Ranked providers",
@@ -27,6 +27,10 @@ function rankEvent(): TraceEvent {
             reputation: 0.9,
             evidenceQuality: null,
           },
+          fitScore: 0.833,
+          matchGrade: "wonderful",
+          explanation: "Matches your requirements well.",
+          ...overrides,
         },
       ],
     },
@@ -74,6 +78,28 @@ describe("TraceScreen", () => {
     expect(scoreBlock).toHaveTextContent("requirementMatch: 0.80", { exact: false });
     expect(scoreBlock).toHaveTextContent("evidenceQuality: —", { exact: false });
     expect(scoreBlock).not.toHaveTextContent("null", { exact: false });
+  });
+
+  it("renders the match grade, fitScore, and explanation for a rank step's score block", async () => {
+    await render(<TraceScreen events={[rankEvent()]} onBack={jest.fn()} />);
+
+    expect(screen.getByTestId("trace-score-0-grade")).toHaveTextContent("Wonderful match (fitScore: 0.83)");
+    expect(screen.getByTestId("trace-score-0-explanation")).toHaveTextContent(
+      "Matches your requirements well.",
+    );
+  });
+
+  it("renders an em-dash for fitScore, never a fabricated number, when fitScore is null", async () => {
+    await render(
+      <TraceScreen
+        events={[rankEvent({ fitScore: null, matchGrade: "insufficient_data" })]}
+        onBack={jest.fn()}
+      />,
+    );
+
+    const gradeLine = screen.getByTestId("trace-score-0-grade");
+    expect(gradeLine).toHaveTextContent(/Not enough information to assess fit/);
+    expect(gradeLine).toHaveTextContent(/fitScore: —/);
   });
 
   it("renders each phrased question for a prepareQuestions step", async () => {

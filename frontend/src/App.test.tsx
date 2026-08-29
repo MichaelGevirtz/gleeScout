@@ -57,6 +57,8 @@ function providerScoreFixture(url: string, name: string): ProviderScore {
       evidenceQuality: 0.5,
     },
     explanation: `${name} is a strong match.`,
+    fitScore: 0.8,
+    matchGrade: "good",
   };
 }
 

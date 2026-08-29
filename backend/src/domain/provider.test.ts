@@ -117,4 +117,34 @@ describe("ProviderCandidateSchema", () => {
       expect(result.data.inferred).toBeUndefined();
     }
   });
+
+  it("accepts a candidate with reputationRating/reputationReviewCount populated", () => {
+    const candidate = {
+      url: "https://example.com/listing/jump-around-rentals",
+      fields: {},
+      reputationRating: 4.3,
+      reputationReviewCount: 217,
+    };
+
+    const result = ProviderCandidateSchema.safeParse(candidate);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.reputationRating).toBe(4.3);
+      expect(result.data.reputationReviewCount).toBe(217);
+    }
+  });
+
+  it("accepts a candidate with reputationRating/reputationReviewCount omitted (optional)", () => {
+    const candidate = {
+      url: "https://example.com/listing/jump-around-rentals",
+      fields: {},
+    };
+
+    const result = ProviderCandidateSchema.safeParse(candidate);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.reputationRating).toBeUndefined();
+      expect(result.data.reputationReviewCount).toBeUndefined();
+    }
+  });
 });

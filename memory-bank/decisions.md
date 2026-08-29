@@ -1681,6 +1681,143 @@ files / 350 tests green (4 new in `domain/trace.test.ts`, 1 new in
 and `npm run build` both clean. Not yet observed against a live
 request with real API keys — same caveat as D23.
 
+## D25 — Requirement-fit match grade (fitScore/matchGrade), separate from the existing ranking score (tasks 79-82)
+
+**Context**: a personal/portfolio UX request to replace the
+Recommendations screen's debug-flavored provider row ("Signals: 3/5",
+no clear "why is this good") with a qualitative match grade
+(Wonderful/Good/Average/Poor). Before any UI work, the existing
+ranking implementation (D8, D13) was inspected against the request's
+explicit constraint that the grade must represent *requirement fit
+only* — never FACT/INFERRED evidence volume, never provider quality.
+
+**Finding**: it does not. `ProviderScore.score` (`aggregateScore.ts`)
+is a 5-dimension weighted mean — `requirementMatch`, `geoFit`,
+`priceFit` (genuine fit signals, tested against something the user
+actually stated), plus `reputation` (provider quality — a 5-star
+rating isn't "more fitting" of a stated requirement the user never
+gave a rating threshold for) and `evidenceQuality` (raw FACT-field
+population ratio — exactly what the request explicitly forbade using).
+Mapping `score` directly to a grade would have violated the request's
+own constraint. A second, real problem, independent of the first: the
+5-dimension score renormalizes over whichever dimensions are non-null
+per candidate (already on record as the post-M9 "Finding 1", this
+file's `## Observed Findings — post-M9 review` section) — sound for
+*sorting*, not for an absolute-sounding label.
+
+**Decision**:
+1. New `fitScore` = mean of only `requirementMatch`/`geoFit`/
+   `priceFit`, computed in a new `backend/src/ranking/fitScore.ts`,
+   reusing the existing per-dimension functions (no new scoring
+   algorithm). `reputation` stays visible on the card as its own line
+   (provider quality is real and useful — Part 6 explicitly asks for
+   "Rating/reputation" as its own bullet) but never feeds the grade
+   unless it becomes an explicit user requirement in the future (not
+   built speculatively ahead of that).
+2. `fitScore` requires at least `MIN_MEANINGFUL_FIT_DIMENSIONS = 2` of
+   the 3 known, else `null` — mirrors D13h's existing floor rationale,
+   but rediscovered independently here: real fixture data (candidateC/
+   candidateE in `rankProviders.test.ts`, only 1 of 3 fit dimensions
+   known each) proved a single known dimension alone would otherwise
+   render a misleading perfect "Wonderful match."
+3. `null` maps to a fifth UI state, `"insufficient_data"` ("Not enough
+   information to assess fit") — never silently downgraded to
+   `"poor"`, which would misrepresent "we don't know" as "we checked
+   and it doesn't fit."
+4. Grade thresholds (`>= 0.75/0.5/0.25` -> wonderful/good/average/poor)
+   are an explicit, **documented heuristic, not empirically
+   calibrated** — existing fixtures only produce two post-floor values
+   (1.0, 0.44), not enough spread to validate the 0.5/0.25 boundaries
+   specifically. Same honesty-over-false-precision status as D13f's
+   equal ranking weights.
+5. `rankProviders`'s existing `score`/sort/`MAX_RANKED_RESULTS` cap are
+   completely untouched — `fitScore`/`matchGrade` are additive fields
+   on `ProviderScore`. Ranking order (which candidate is #1) and match
+   grade (does #1 meet what you asked for) are deliberately two
+   different questions, both real, neither faked as the other.
+6. Frontend (`MatchGradeBadge.tsx`) is a pure label/copy/color lookup
+   keyed by the backend-computed `matchGrade` string — zero thresholds,
+   zero math on the client. Raw `fitScore` is never rendered.
+   `ProviderDetailsScreen`'s 5 dimension bars are regrouped into
+   "Requirement fit" (the 3 grade inputs) vs. "Reputation & evidence"
+   (the 2 that don't affect it, captioned as such), so the deeper-detail
+   screen doesn't contradict the card's claim.
+
+**Assignment alignment**: PROJECT DECISION supporting EXPLICIT
+requirements — Part 6 ("Why they are a good match", "Rating /
+reputation", and "Why this provider ranks where it does" as separate
+card elements) and Part 3 ("A generic sort by star rating is not
+enough"). The specific 4-tier qualitative grade, the 3-dimension
+fitScore split, and the 0.75/0.5/0.25 thresholds are the project's own
+implementation choice, not literally specified by the assignment.
+
+**Status**: ACCEPTED and implemented (tasks 79-82, all DONE).
+`backend npm test` 40 files / 363 tests green (13 new). `backend npm
+run typecheck` clean. `frontend npm test` 142/142 green (17 new plus
+one pre-existing `App.test.tsx` fixture updated for the new required
+`ProviderScore` fields). `frontend npx tsc --noEmit` clean. No
+regressions in either suite; `rankProviders`'s existing sort-order
+tests pass unmodified. Open follow-up (not scoped into this pass):
+`ContextPanel`'s new "How we score providers" affordance
+(`onExplainScoring`) isn't wired to any real explanation surface yet.
+
+**Addendum (2026-08-29, task-83) — the M13 agent trace was missed as a
+consumer of `fitScore`/`matchGrade` and couldn't answer "why this
+grade" until fixed.** Found live, the same day, while investigating a
+real "why did NYC Birthday Clowns get Poor match" question:
+`generateProviderList.ts`'s "rank" trace event duplicates
+`ProviderScore`'s dimension data into its own `detail.scores[]` shape
+(so the trace stays JSON-stable independent of `ProviderScore`'s exact
+type) — task-79 added `fitScore`/`matchGrade` to `ProviderScore` but
+never updated this second, hand-maintained copy, so the trace (and
+`TraceScreen.tsx`, which explicitly types and renders that copy rather
+than rendering `detail` generically) silently fell out of sync. Fixed
+in task-83: `fitScore`/`matchGrade`/`explanation` added to the trace's
+per-candidate score entries and to `TraceScreen.tsx`'s rendering.
+**Status**: ACCEPTED and implemented (task-83, DONE). `backend npm
+test` 363/363 green, `typecheck`/`build` clean. `frontend npm test`
+144/144 green (2 new), `npx tsc --noEmit` clean.
+
+## D26 — Mock blended reputation signal (Google-like + Yelp-like), never a ranking input (task-84, task-85)
+
+**Decision**: Each ranked provider carries a single blended
+`reputationRating`/`reputationReviewCount` on `ProviderCandidateSchema`
+(siblings of `fields`/`inferred`, not inside either), computed by
+`backend/src/recommendation/mockReputationSignals.ts` as the average
+of two independently seeded, deterministic, no-I/O mock lookups
+(seeded `` `${url}:google` `` / `` `${url}:yelp` ``, same generator
+function for both — "same calculation, different seed"). Attached to
+`candidate` strictly *after* `rankProviders` runs, inside
+`generateProviderList.ts`, so it can never influence
+`score`/`dimensionScores`/`fitScore`/`matchGrade`/order. The two
+per-source values never leave `mockReputationSignals.ts`; only the
+blended pair is ever exposed on the schema/API. Field names are
+source-neutral (no "google"/"yelp" in the exposed field names) since
+the value is a blend of two fabricated numbers, not either platform's
+real data.
+**Rationale**: Reviewer originally asked for a real Google Places API
+(New) integration; after review (Google Cloud Billing required even
+for free-tier usage, and Part 2/6's rating requirements are already
+met by the existing Firecrawl+Gemini FACT `rating`/`reviewCount`
+pipeline and `RecommendationsScreen.tsx`'s `deriveRating`), the
+reviewer chose to keep the visual feature but replace it with
+deterministic mock data, then extended it to a blended two-source mock
+rather than build either real integration. This directly parallels
+D19/D21/D25's "visual/portfolio completeness, not assignment-required"
+category — it is explicitly NOT a Part 3 "enrich using Google
+reviews/Yelp" implementation and must never be described as satisfying
+that suggestion. The conflict with Part 5's "Trust & Grounding"
+criterion and this project's own D7 FACT/INFERRED/SIMULATED discipline
+was surfaced directly to the reviewer (assignment-review step 7) and
+resolved by their own decision to label the value "(simulated)" on the
+card (reusing the existing SIMULATED-data convention, task-85) rather
+than drop the feature or fake a real API call.
+**Status**: Project decision, confirmed twice with the reviewer via
+AskUserQuestion (once for the single-source version, again for the
+blended/source-neutral naming). Revisit only if a future task adds a
+real Google/Yelp integration, at which point this mock path should be
+removed rather than kept alongside real data.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

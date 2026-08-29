@@ -25,10 +25,21 @@ function DetailLine({ label, value }: { label: string; value: string }) {
   );
 }
 
+const MATCH_GRADE_LABELS: Record<string, string> = {
+  wonderful: "Wonderful match",
+  good: "Good match",
+  average: "Average match",
+  poor: "Poor match",
+  insufficient_data: "Not enough information to assess fit",
+};
+
 interface RankScore {
   provider: string;
   score: number;
   dimensionScores: Record<string, number | null>;
+  fitScore: number | null;
+  matchGrade: string;
+  explanation: string;
 }
 
 function EventDetail({ event }: { event: TraceEvent }) {
@@ -61,6 +72,13 @@ function EventDetail({ event }: { event: TraceEvent }) {
             <View key={`${s.provider}-${i}`} style={styles.scoreBlock} testID={`trace-score-${i}`}>
               <Text style={styles.scoreProvider}>
                 {s.provider} — score {s.score.toFixed(2)}
+              </Text>
+              <Text testID={`trace-score-${i}-grade`} style={styles.gradeLine}>
+                {MATCH_GRADE_LABELS[s.matchGrade] ?? s.matchGrade} (fitScore:{" "}
+                {s.fitScore === null ? EM_DASH : s.fitScore.toFixed(2)})
+              </Text>
+              <Text testID={`trace-score-${i}-explanation`} style={styles.dimensionLine}>
+                {s.explanation}
               </Text>
               {Object.entries(s.dimensionScores).map(([dim, val]) => (
                 <Text key={dim} style={styles.dimensionLine}>
@@ -199,6 +217,12 @@ const styles = StyleSheet.create({
   scoreProvider: {
     fontWeight: "600",
     fontSize: 13,
+  },
+  gradeLine: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
+    marginLeft: 8,
   },
   dimensionLine: {
     fontSize: 12,

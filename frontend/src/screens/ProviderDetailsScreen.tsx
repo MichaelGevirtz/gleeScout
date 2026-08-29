@@ -25,14 +25,12 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
 };
 
 // Fixed order, per design/m14-ux-spec.md screen 4 — never derived from
-// object key order.
-const DIMENSION_ORDER: RankingDimension[] = [
-  "requirementMatch",
-  "geoFit",
-  "priceFit",
-  "reputation",
-  "evidenceQuality",
-];
+// object key order. Split into two groups so it's clear only the first
+// three drive the Recommendations screen's match grade (see
+// backend/src/ranking/fitScore.ts) — reputation/evidenceQuality are
+// provider-quality/evidence signals, not requirement fit.
+const FIT_DIMENSION_ORDER: RankingDimension[] = ["requirementMatch", "geoFit", "priceFit"];
+const QUALITY_DIMENSION_ORDER: RankingDimension[] = ["reputation", "evidenceQuality"];
 
 const DIMENSION_LABELS: Record<RankingDimension, string> = {
   requirementMatch: "Requirement match",
@@ -58,6 +56,26 @@ const FIELD_ORDER: (keyof ProviderCandidateFields)[] = [
   "policies",
   "contactMethod",
 ];
+
+function DimensionBar({ dimension, score }: { dimension: RankingDimension; score: number | null }) {
+  return (
+    <View testID={`dimension-bar-${dimension}`}>
+      <Text>{DIMENSION_LABELS[dimension]}</Text>
+      {score === null ? (
+        <View testID={`dimension-bar-${dimension}-empty`} style={styles.dashedBar}>
+          <Text>Not enough data</Text>
+        </View>
+      ) : (
+        <View style={styles.barTrack}>
+          <View
+            testID={`dimension-bar-${dimension}-fill`}
+            style={[styles.barFill, { width: `${Math.round(score * 100)}%` }]}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
 
 function formatFactValue(value: string | number | string[]): string {
   if (Array.isArray(value)) {
@@ -118,26 +136,22 @@ export default function ProviderDetailsScreen({
       </View>
 
       <View testID="dimension-bars">
-        {DIMENSION_ORDER.map((dimension) => {
-          const score = dimensionScores[dimension];
-          return (
-            <View key={dimension} testID={`dimension-bar-${dimension}`}>
-              <Text>{DIMENSION_LABELS[dimension]}</Text>
-              {score === null ? (
-                <View testID={`dimension-bar-${dimension}-empty`} style={styles.dashedBar}>
-                  <Text>Not enough data</Text>
-                </View>
-              ) : (
-                <View style={styles.barTrack}>
-                  <View
-                    testID={`dimension-bar-${dimension}-fill`}
-                    style={[styles.barFill, { width: `${Math.round(score * 100)}%` }]}
-                  />
-                </View>
-              )}
-            </View>
-          );
-        })}
+        <View testID="dimension-group-fit">
+          <Text style={styles.groupHeader}>Requirement fit</Text>
+          {FIT_DIMENSION_ORDER.map((dimension) => (
+            <DimensionBar key={dimension} dimension={dimension} score={dimensionScores[dimension]} />
+          ))}
+        </View>
+
+        <View testID="dimension-group-quality">
+          <Text style={styles.groupHeader}>Reputation & evidence</Text>
+          <Text testID="dimension-group-quality-caption" style={styles.groupCaption}>
+            Doesn&rsquo;t affect the match grade on the Recommendations screen.
+          </Text>
+          {QUALITY_DIMENSION_ORDER.map((dimension) => (
+            <DimensionBar key={dimension} dimension={dimension} score={dimensionScores[dimension]} />
+          ))}
+        </View>
       </View>
 
       <Pressable testID="select-cta" onPress={() => onSelectProvider(candidate)}>
@@ -148,6 +162,16 @@ export default function ProviderDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  groupHeader: {
+    fontWeight: "700",
+    fontSize: 14,
+    marginTop: 12,
+  },
+  groupCaption: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginBottom: 4,
+  },
   dashedBar: {
     borderWidth: 1,
     borderStyle: "dashed",

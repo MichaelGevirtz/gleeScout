@@ -150,4 +150,49 @@ describe("rankProviders", () => {
     expect(result[0].dimensionScores.reputation).toBeNull();
     expect(result[0].score).toBeGreaterThan(0);
   });
+
+  it("computes fitScore/matchGrade from only requirementMatch/geoFit/priceFit, per real fixtures", () => {
+    const result = rankProviders({
+      candidates: [candidateA, candidateB, candidateC, candidateE, candidateF],
+      requirements: REQUIREMENTS,
+    });
+    const byUrl = Object.fromEntries(result.map((r) => [r.candidate.url, r]));
+
+    // A: rm=1, geo=1, price=1 -> 1.0 -> wonderful
+    expect(byUrl[candidateA.url].fitScore).toBeCloseTo(1);
+    expect(byUrl[candidateA.url].matchGrade).toBe("wonderful");
+
+    // B: rm=0, geo=1, price=0.333... -> 0.444 -> average
+    expect(byUrl[candidateB.url].fitScore).toBeCloseTo(0.4444444, 5);
+    expect(byUrl[candidateB.url].matchGrade).toBe("average");
+
+    // C: only geoFit known (1 of 3) -> below MIN_MEANINGFUL_FIT_DIMENSIONS -> null/insufficient_data
+    expect(byUrl[candidateC.url].fitScore).toBeNull();
+    expect(byUrl[candidateC.url].matchGrade).toBe("insufficient_data");
+
+    // E: only requirementMatch known (1 of 3) -> null/insufficient_data
+    expect(byUrl[candidateE.url].fitScore).toBeNull();
+    expect(byUrl[candidateE.url].matchGrade).toBe("insufficient_data");
+
+    // F: rm=1, geo=1, price=1 -> 1.0 -> wonderful (reputation/evidenceQuality don't affect this)
+    expect(byUrl[candidateF.url].fitScore).toBeCloseTo(1);
+    expect(byUrl[candidateF.url].matchGrade).toBe("wonderful");
+  });
+
+  it("does not change existing score values or sort order (fitScore/matchGrade are purely additive)", () => {
+    const result = rankProviders({
+      candidates: [candidateA, candidateB, candidateC, candidateD, candidateE, candidateF],
+      requirements: REQUIREMENTS,
+    });
+
+    // Same regression this file already asserts elsewhere (MIN_MEANINGFUL_DIMENSIONS drop of
+    // candidateD) — re-asserted here as an explicit "this task didn't touch ranking" guard. No
+    // fixed A-vs-F order is asserted, matching this file's other multi-candidate test: F's existing
+    // 5-dim score legitimately outscores A's once reputation/evidenceQuality are counted, which is
+    // pre-existing behavior this task does not change.
+    expect(result.map((r) => r.candidate.url)).not.toContain(candidateD.url);
+    for (let i = 0; i < result.length - 1; i++) {
+      expect(result[i].score).toBeGreaterThanOrEqual(result[i + 1].score);
+    }
+  });
 });

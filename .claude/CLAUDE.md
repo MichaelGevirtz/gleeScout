@@ -134,6 +134,11 @@ every M15 test)**:
    import), the test crashes with a native-module error even though
    the module is nominally "mocked." Always give it an explicit empty
    factory instead: `jest.mock("./path", () => ({ exportName: jest.fn() }))`.
+6. `toHaveTextContent(str)` defaults to **exact** full-string equality
+   (after whitespace normalization), not substring matching — pass
+   `{ exact: false }` explicitly when you want an `.includes()`-style
+   check (e.g. asserting a label like "(simulated)" appears somewhere
+   inside a longer line). Found in task-85.
 
 This section must be kept up to date as real commands are added —
 update it as part of the task that introduces each command.

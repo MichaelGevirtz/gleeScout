@@ -55,6 +55,8 @@ function makeProvider(overrides: Partial<ProviderScore> = {}): ProviderScore {
       reputation: 0.7,
     },
     explanation: "Strong match on requirements with solid reputation.",
+    fitScore: 0.9,
+    matchGrade: "wonderful",
     ...overrides,
   };
 }
@@ -121,7 +123,7 @@ describe("RecommendationsScreen", () => {
     expect(screen.getByTestId("provider-row-0-name")).toHaveTextContent("no-name-provider.com");
   });
 
-  it("shows an em-dash, never a fabricated number, when fields.pricing is absent", async () => {
+  it("omits the price row entirely (no dash placeholder) when fields.pricing is absent", async () => {
     const providers = [
       makeProvider({
         candidate: makeCandidate({
@@ -131,10 +133,75 @@ describe("RecommendationsScreen", () => {
     ];
     await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
-    expect(screen.getByTestId("provider-row-0-price")).toHaveTextContent("—");
+    expect(screen.queryByTestId("provider-row-0-price")).toBeNull();
   });
 
-  it("matches known facts-sourced / inferred / signals counts for a mixed fixture", async () => {
+  it("omits the rating row entirely when fields.rating is absent", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          fields: { name: fact("No Rating Co") },
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.queryByTestId("provider-row-0-rating")).toBeNull();
+  });
+
+  it("renders the labeled simulated reputation line, replacing the fact rating line, when both mock fields are present", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          fields: { name: fact("Blended Co"), rating: fact(4.9), reviewCount: fact(500) },
+          reputationRating: 4.3,
+          reputationReviewCount: 217,
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    const rating = screen.getByTestId("provider-row-0-rating");
+    expect(rating).toHaveTextContent("★ 4.3 · 217 reviews (simulated)");
+    expect(rating).not.toHaveTextContent("4.9", { exact: false });
+    expect(rating).not.toHaveTextContent("500", { exact: false });
+  });
+
+  it("falls back to the existing fact rating line when mock reputation fields are absent", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          fields: { name: fact("Fact Only Co"), rating: fact(4.2), reviewCount: fact(50) },
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    const rating = screen.getByTestId("provider-row-0-rating");
+    expect(rating).toHaveTextContent("★ 4.2 (50 reviews)");
+    expect(rating).not.toHaveTextContent("simulated", { exact: false });
+  });
+
+  it("renders the mock reputation line below/separate from the match grade badge", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          reputationRating: 3.8,
+          reputationReviewCount: 90,
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    const serialized = JSON.stringify(screen.toJSON());
+    const badgeIndex = serialized.indexOf('"match-grade-label"');
+    const ratingIndex = serialized.indexOf('"provider-row-0-rating"');
+
+    expect(badgeIndex).toBeGreaterThan(-1);
+    expect(ratingIndex).toBeGreaterThan(badgeIndex);
+  });
+
+  it("matches known facts-sourced / inferred counts for a mixed fixture", async () => {
     const providers = [
       makeProvider({
         candidate: makeCandidate({
@@ -158,7 +225,37 @@ describe("RecommendationsScreen", () => {
 
     expect(screen.getByTestId("provider-row-0-facts")).toHaveTextContent("3 facts sourced");
     expect(screen.getByTestId("provider-row-0-inferred")).toHaveTextContent("2 inferred");
-    expect(screen.getByTestId("provider-row-0-signals")).toHaveTextContent("Signals: 3 / 5");
+  });
+
+  it("renders the match grade badge with the correct label and reputation shown separately", async () => {
+    const providers = [
+      makeProvider({
+        matchGrade: "good",
+        candidate: makeCandidate({
+          fields: { name: fact("Good Co"), rating: fact(4.2), reviewCount: fact(50) },
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("match-grade-label")).toHaveTextContent("Good match");
+    expect(screen.getByTestId("provider-row-0-rating")).toHaveTextContent("★ 4.2 (50 reviews)");
+  });
+
+  it("renders the insufficient_data grade without the word 'Poor'", async () => {
+    const providers = [makeProvider({ matchGrade: "insufficient_data", fitScore: null })];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("match-grade-label")).toHaveTextContent("Not enough information to assess fit");
+  });
+
+  it("never renders a raw numeric fitScore or a percentage string anywhere", async () => {
+    const providers = [makeProvider({ fitScore: 0.83, matchGrade: "wonderful" })];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    const serialized = JSON.stringify(screen.toJSON());
+    expect(serialized).not.toContain("0.83");
+    expect(serialized).not.toMatch(/\d+%/);
   });
 
   it("renders the explanation verbatim as the one-line rationale", async () => {

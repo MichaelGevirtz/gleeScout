@@ -8,6 +8,7 @@ import {
   type EnrichFn,
   type RankFn,
 } from "./generateProviderList.js";
+import { computeMockReputation } from "./mockReputationSignals.js";
 
 function readyState(overrides: Partial<ConversationState> = {}): ConversationState {
   return {
@@ -38,6 +39,8 @@ describe("generateProviderList", () => {
           evidenceQuality: 0,
         },
         explanation: "test explanation",
+        fitScore: null,
+        matchGrade: "insufficient_data",
       },
     ];
 
@@ -75,7 +78,64 @@ describe("generateProviderList", () => {
       location: "Austin, TX",
       categoryAttributes: state.categoryAttributes,
     });
-    expect(result.providers).toBe(ranked);
+    expect(result.providers).toEqual([
+      {
+        ...ranked[0],
+        candidate: { ...ranked[0]!.candidate, ...computeMockReputation(ranked[0]!.candidate.url) },
+      },
+    ]);
+  });
+
+  it("attaches deterministic mock reputation to each candidate without altering rank's score/dimensionScores/fitScore/matchGrade/order", async () => {
+    const candidateA = candidate("https://a.example");
+    const candidateB = candidate("https://b.example");
+    const ranked: ProviderScore[] = [
+      {
+        candidate: candidateA,
+        score: 0.9,
+        dimensionScores: {
+          requirementMatch: 0.9,
+          geoFit: 1,
+          priceFit: 0.8,
+          reputation: null,
+          evidenceQuality: 0.8,
+        },
+        explanation: "top match",
+        fitScore: 0.9,
+        matchGrade: "wonderful",
+      },
+      {
+        candidate: candidateB,
+        score: 0.5,
+        dimensionScores: {
+          requirementMatch: 0.5,
+          geoFit: 0.5,
+          priceFit: 0.5,
+          reputation: null,
+          evidenceQuality: 0.5,
+        },
+        explanation: "average match",
+        fitScore: 0.5,
+        matchGrade: "average",
+      },
+    ];
+
+    const discover: DiscoverFn = async () => [candidateA, candidateB];
+    const enrich: EnrichFn = async ({ candidates }) => candidates;
+    const rank: RankFn = () => ranked;
+
+    const { providers } = await generateProviderList({ state: readyState(), discover, enrich, rank });
+
+    expect(providers.map((p) => p.candidate.url)).toEqual([candidateA.url, candidateB.url]);
+    for (let i = 0; i < providers.length; i++) {
+      const { candidate: _candidate, ...rest } = providers[i]!;
+      const { candidate: _originalCandidate, ...expectedRest } = ranked[i]!;
+      expect(rest).toEqual(expectedRest);
+
+      const expectedReputation = computeMockReputation(ranked[i]!.candidate.url);
+      expect(providers[i]!.candidate.reputationRating).toBe(expectedReputation.reputationRating);
+      expect(providers[i]!.candidate.reputationReviewCount).toBe(expectedReputation.reputationReviewCount);
+    }
   });
 
   it("returns a trace describing discovery, enrichment, and ranking", async () => {
@@ -95,6 +155,8 @@ describe("generateProviderList", () => {
           evidenceQuality: 0.8,
         },
         explanation: "test explanation",
+        fitScore: 0.833,
+        matchGrade: "wonderful",
       },
     ];
 
@@ -120,7 +182,16 @@ describe("generateProviderList", () => {
 
     const rankEvent = trace.find((e) => e.step === "rank");
     expect(rankEvent?.detail).toEqual({
-      scores: [{ provider: "a.example", score: 0.75, dimensionScores: ranked[0]!.dimensionScores }],
+      scores: [
+        {
+          provider: "a.example",
+          score: 0.75,
+          dimensionScores: ranked[0]!.dimensionScores,
+          fitScore: ranked[0]!.fitScore,
+          matchGrade: ranked[0]!.matchGrade,
+          explanation: ranked[0]!.explanation,
+        },
+      ],
     });
 
     const recommendEvent = trace.find((e) => e.step === "recommend");
@@ -148,6 +219,8 @@ describe("generateProviderList", () => {
           evidenceQuality: null,
         },
         explanation: "test",
+        fitScore: null,
+        matchGrade: "insufficient_data",
       }));
 
     const { trace } = await generateProviderList({ state: readyState(), discover, enrich, rank });

@@ -8,6 +8,7 @@ export interface ContextPanelProps {
   isChatOpen: boolean;
   onOpenChat: () => void;
   onBackToMatches: () => void;
+  onExplainScoring?: () => void;
 }
 
 interface EventField {
@@ -51,6 +52,7 @@ export default function ContextPanel({
   isChatOpen,
   onOpenChat,
   onBackToMatches,
+  onExplainScoring,
 }: ContextPanelProps) {
   const eventFields = computeEventFields(state);
 
@@ -76,6 +78,12 @@ export default function ContextPanel({
       <Text testID="context-match-count" style={styles.matchCount}>
         {matchCount} providers
       </Text>
+
+      {onExplainScoring && (
+        <Pressable testID="context-explain-scoring" onPress={onExplainScoring} style={styles.explainScoring}>
+          <Text style={styles.explainScoringText}>How we score providers</Text>
+        </Pressable>
+      )}
 
       {currentlyViewing !== undefined && (
         <View testID="context-currently-viewing" style={styles.currentlyViewing}>
@@ -136,6 +144,14 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
+  },
+  explainScoring: {
+    paddingVertical: 2,
+  },
+  explainScoringText: {
+    color: "#4b5563",
+    fontSize: 12,
+    textDecorationLine: "underline",
   },
   currentlyViewing: {
     padding: 12,

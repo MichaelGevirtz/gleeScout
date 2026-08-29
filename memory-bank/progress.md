@@ -1474,6 +1474,112 @@
   tests passing, `npm run typecheck` and `npm run build` both clean.
   Not yet observed against a live request with real API keys.
 
+- **Tasks 79-82 — Recommendations UX redesign: requirement-fit match
+  grades, replacing the raw ranking score in the UI** (all DONE, see
+  `tasks/completed/task-79-fit-score-and-match-grade.md` through
+  `task-82-context-panel-scoring-link.md`): a non-milestone,
+  personal/portfolio UX polish pass on the existing M12/M15
+  recommendation surface, preceded by an extensive design review (see
+  D25) that found the existing 5-dimension aggregate `score` cannot be
+  honestly shown to the user as "why is this a good match" — 20% of
+  it is `evidenceQuality` (raw FACT-field count) and another 20% is
+  `reputation` (provider quality), neither of which answer "does this
+  meet what I asked for."
+  - Task 79 (backend): new `backend/src/ranking/fitScore.ts` —
+    `computeFitScore` (mean of only `requirementMatch`/`geoFit`/
+    `priceFit`, `null` below `MIN_MEANINGFUL_FIT_DIMENSIONS = 2` known)
+    and `deriveMatchGrade` (fixed 0.75/0.5/0.25 thresholds ->
+    wonderful/good/average/poor, `null` -> `insufficient_data`, never
+    `poor`). `ProviderScore` gained `fitScore`/`matchGrade`.
+    `rankProviders`'s existing `score`/sort/cap are untouched — the two
+    new fields are purely additive, reusing the `dimensionScores`
+    already computed per candidate, no second ranking algorithm. 15
+    new tests including real-fixture-driven grade assertions.
+  - Task 80 (frontend): `RecommendationsScreen.tsx` redesigned around
+    rank/name -> new `MatchGradeBadge` component (pure label/copy/color
+    lookup, zero thresholds) -> the existing per-candidate `explanation`
+    text -> price/location (omitted, never dashed, when absent) ->
+    reputation (rating, shown separately from the grade) -> FACT/
+    INFERRED counts -> "View details". The old "Signals: X/5" line is
+    gone. Raw `fitScore` is never rendered. 14 new tests across the two
+    files, plus one pre-existing `App.test.tsx` fixture updated (it
+    predated the new required fields and crashed the badge lookup).
+  - Task 81 (frontend): `ProviderDetailsScreen.tsx`'s 5 dimension bars
+    regrouped into "Requirement fit" (the 3 fitScore inputs) and
+    "Reputation & evidence" (the 2 that don't affect the grade, with an
+    explanatory caption) — same bars, same fill logic, just visually
+    separated so Provider Details doesn't contradict the card's "match
+    = fit only" claim. 1 new test.
+  - Task 82 (frontend): `ContextPanel.tsx` gained an optional
+    `onExplainScoring` prop rendering a low-emphasis "How we score
+    providers" text affordance (renders nothing when the prop is
+    omitted) — not yet wired to a real explanation surface in
+    `App.tsx` (open follow-up, not scoped into this pass).
+  - `backend/npm test`: 363/363 passing (350 pre-existing + 13 new).
+    `backend/npm run typecheck`: clean. `frontend/npm test`: 142/142
+    passing. `frontend/npx tsc --noEmit`: clean. No regressions in
+    either suite.
+
+- **Task 83 — Add fitScore/matchGrade/explanation to the rank trace
+  event** (DONE, see
+  `tasks/completed/task-83-trace-fit-score-and-grade.md`): found live
+  the same day, while answering a real user question ("why did this
+  specific provider get Poor match") — the M13 trace's "rank" step
+  already logged `score`/`dimensionScores` per candidate but was never
+  updated when task-79 added `fitScore`/`matchGrade`, so the trace
+  (and its dedicated `TraceScreen.tsx` renderer, which is explicitly
+  typed rather than generic) couldn't answer the new "why this grade"
+  question without external script reproduction.
+  `generateProviderList.ts`'s rank event now carries
+  `fitScore`/`matchGrade`/`explanation` per candidate;
+  `TraceScreen.tsx` renders a grade line (with an em-dash for a null
+  fitScore, never a fabricated number) and the explanation text. 3
+  backend fixtures updated, 2 new frontend tests. `backend/npm test`:
+  363/363. `backend/npm run typecheck`/`build`: clean. `frontend/npm
+  test`: 144/144. `frontend/npx tsc --noEmit`: clean. The trace
+  endpoint is now self-sufficient to answer "why did provider X get
+  grade Y" without needing to reproduce the computation externally.
+
+- **Task 84 — Mock reputation signal, averaged Google + Yelp mocks
+  (backend)** (DONE, see
+  `tasks/completed/task-84-mock-reputation-signal-backend.md`): new
+  `backend/src/recommendation/mockReputationSignals.ts` —
+  `generateMockReputation(seed)` (deterministic string-hash-based
+  `rating`/`reviewCount`, no `Math.random()`, no I/O) and
+  `computeMockReputation(url)` (averages two independently seeded
+  calls, `` `${url}:google` `` / `` `${url}:yelp` ``). Attached to
+  each candidate strictly after `rankProviders` runs inside
+  `generateProviderList.ts`, so ranking is provably unaffected.
+  `ProviderCandidateSchema` gained optional
+  `reputationRating`/`reputationReviewCount` (siblings of
+  `fields`/`inferred`). Field names are source-neutral by design — see
+  D26; this is NOT a real Google/Yelp integration and does not satisfy
+  Part 3's enrichment suggestion. 12 new backend tests (6
+  generator/averaging unit tests, 2 schema tests, 4
+  attachment/regression tests including a byte-identical-ranking
+  check). `backend/npm test`: 372/372 passing. `backend/npm run
+  typecheck`/`build`: clean. Frontend display is task-85, not this
+  task.
+
+- **Task 85 — Mock reputation signal display (frontend)** (DONE, see
+  `tasks/completed/task-85-mock-reputation-signal-frontend.md`):
+  `frontend/src/domain/types.ts`'s `ProviderCandidate` gained optional
+  `reputationRating`/`reputationReviewCount`, mirroring task-84's
+  backend schema. `RecommendationsScreen.tsx` gained
+  `deriveMockReputation(candidate)`, rendered in place of the existing
+  `deriveRating()` line (same testID, same visual slot) whenever both
+  mock fields are present: `★ {rating} · {reviewCount} reviews
+  (simulated)`; candidates without the mock fields render exactly as
+  before (unlabeled FACT rating, unchanged fallback). Does not touch
+  `MatchGradeBadge.tsx`, `ProviderDetailsScreen.tsx`, `ContextPanel.tsx`,
+  or any backend file. 3 new component tests (labeled line replaces
+  fact line and shows correct values, falls back correctly when mock
+  fields absent, renders after the match grade badge — not merged with
+  it). `frontend/npm test`: 147/147 passing. `frontend/npx tsc
+  --noEmit`: clean. Added a DESIGN.md Assumptions bullet since this is
+  the point the mock reputation feature (D26) actually becomes
+  user-visible.
+
 ## Blocked Work
 
 - None.

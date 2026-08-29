@@ -3,6 +3,7 @@ import { discoverProviderCandidates } from "../research/discoverProviderCandidat
 import { enrichProviderCandidates } from "../research/enrichProviderCandidates.js";
 import { rankProviders } from "../ranking/rankProviders.js";
 import { deriveRankingRequirements } from "../ranking/types.js";
+import { computeMockReputation } from "./mockReputationSignals.js";
 import type { ConversationState } from "../domain/conversation.js";
 import type { ProviderCandidate } from "../domain/provider.js";
 import type { ProviderScore, RankingRequirements } from "../ranking/types.js";
@@ -67,8 +68,15 @@ export async function generateProviderList({
   const enriched = await enrich({ candidates: discovered });
   const enrichEndedAt = Date.now();
 
-  const providers = rank({ candidates: enriched, requirements: deriveRankingRequirements(state) });
+  const ranked = rank({ candidates: enriched, requirements: deriveRankingRequirements(state) });
   const rankEndedAt = Date.now();
+
+  // Blended reputation is attached strictly after ranking so it can
+  // never influence score/fitScore/matchGrade/order.
+  const providers: ProviderScore[] = ranked.map((p) => ({
+    ...p,
+    candidate: { ...p.candidate, ...computeMockReputation(p.candidate.url) },
+  }));
 
   const enrichedWithSignal = enriched.filter(
     (c) => Array.isArray(c.inferred) && c.inferred.length > 0
@@ -102,6 +110,9 @@ export async function generateProviderList({
           provider: candidateLabel(p.candidate),
           score: p.score,
           dimensionScores: p.dimensionScores,
+          fitScore: p.fitScore,
+          matchGrade: p.matchGrade,
+          explanation: p.explanation,
         })),
       },
       timestamp: new Date(rankEndedAt).toISOString(),
