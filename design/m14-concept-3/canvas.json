@@ -1,0 +1,21 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844 },
+    { "file": "SearchLoading.dc.html", "x": 520, "y": 0, "w": 390, "h": 844 },
+    { "file": "Recommendations.dc.html", "x": 1040, "y": 0, "w": 390, "h": 844 },
+    { "file": "ProviderDetail.dc.html", "x": 1560, "y": 0, "w": 390, "h": 844 },
+    { "file": "M10Loading.dc.html", "x": 0, "y": 1014, "w": 390, "h": 844 },
+    { "file": "SimulatedQA.dc.html", "x": 520, "y": 1014, "w": 390, "h": 844 },
+    { "file": "ErrorState.dc.html", "x": 1040, "y": 1014, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    { "id": "note-main", "x": 0, "y": -100, "w": 390, "text": "1. Event Workspace — home\nThe EVENT is the persistent central object (header card), not chat or a list. \"Still deciding\" shows ONE open item at a time, answered inline (accordion), then it becomes a chip in \"What I know\" — no fixed sequence, no form rows." },
+    { "id": "note-search", "x": 520, "y": -100, "w": 390, "text": "2. Workspace — providers section loading\nEvent header + resolved details stay visible and stable; only the Providers section shows loading. Nothing takes over the screen." },
+    { "id": "note-recs", "x": 1040, "y": -100, "w": 390, "text": "3. Workspace — providers populated\nEvent card condenses to a one-line summary (still present, still the anchor). Providers become the focus: horizontal carousel (all visible by swiping) + a Top Match card, not a single full-bleed card or a stacked list." },
+    { "id": "note-details", "x": 1560, "y": -100, "w": 390, "text": "4. Provider detail — drill-down\nHeader reads as a breadcrumb: Emma's Birthday Party › Sandi's Moonwalks. This is 'opening part of the event,' not leaving the app or an overlay sheet. Same FACT/INFERRED + dimension-bar content as the other concepts." },
+    { "id": "note-m10", "x": 0, "y": 924, "w": 390, "text": "5. M10 loading\nSame breadcrumb drill-down, content swapped to loading." },
+    { "id": "note-qa", "x": 520, "y": 924, "w": 390, "text": "6. M10 questions + M11 simulated answers\nDashed amber SIMULATED cards + no-contact banner, consistent with Concepts 1 & 2. \"Back to Emma's Birthday Party\" returns to the object, not to a generic list or chat." },
+    { "id": "note-error", "x": 1040, "y": 924, "w": 390, "text": "7. Error state\nInline in the Providers section only — the event header and everything already known stay fully visible and intact." }
+  ],
+  "launch": { "view": "canvas" }
+}

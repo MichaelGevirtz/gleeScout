@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint: #6FA88A; --mint-tint: #E7F5EE; --mint-dark: #3E6B54; --shadow-card: 0 8px 24px rgba(36,21,18,0.08); --shadow-soft: 0 2px 10px rgba(36,21,18,0.06);
+      --radius-input: 16px;
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .smart-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-input); padding: 13px 16px; box-shadow: var(--shadow-soft); }
+    .mini-chip { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+    .skeleton-row { height: 76px; border-radius: 16px; background: linear-gradient(90deg, #F3ECE8 0%, #FBF6F3 50%, #F3ECE8 100%); margin-bottom: 10px; }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div style="padding:20px 20px 4px;">
+    <h1 style="font-size:20px;font-weight:700;margin-bottom:14px;">Your shortlist</h1>
+    <div class="smart-bar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+      <span style="flex:1;font-size:14px;color:var(--ink-faint);">Type your answer&hellip;</span>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:16px 20px;">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow-soft);margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"></path></svg>
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--coral-dark);">One more thing</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <div class="mini-chip"><span style="font-size:11px;font-weight:600;">Outdoor bounce house</span></div>
+        <div class="mini-chip"><span style="font-size:11px;font-weight:600;">Austin, TX</span></div>
+        <div class="mini-chip"><span style="font-size:11px;font-weight:600;">~30 kids</span></div>
+      </div>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.5;font-weight:600;">What date are you planning it for?</p>
+      <div class="smart-bar" style="padding:10px 14px;">
+        <span style="flex:1;font-size:13px;color:var(--ink-faint);">Type your answer&hellip;</span>
+        <div style="width:32px;height:32px;border-radius:999px;background:var(--coral);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:12px;font-weight:600;color:var(--ink-faint);margin:0 0 10px;">Your shortlist will appear here once we know a bit more</p>
+    <div class="skeleton-row"></div>
+    <div class="skeleton-row"></div>
+    <div class="skeleton-row" style="opacity:0.6;"></div>
+    <div class="skeleton-row" style="opacity:0.35;"></div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

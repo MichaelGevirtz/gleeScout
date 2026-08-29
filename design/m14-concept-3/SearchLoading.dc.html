@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint: #6FA88A; --mint-tint: #E7F5EE; --mint-dark: #3E6B54;
+      --shadow-soft: 0 2px 10px rgba(36,21,18,0.06);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .fact-pill { display: flex; align-items: center; gap: 5px; }
+    .known-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--mint-tint); border-radius: 999px; padding: 6px 11px; }
+    .section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+    .skeleton-card { width: 132px; height: 96px; border-radius: 14px; background: linear-gradient(90deg, #F3ECE8 0%, #FBF6F3 50%, #F3ECE8 100%); flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div style="padding:20px 20px 0;flex-shrink:0;">
+    <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);">Your event</span>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:8px 20px 20px;">
+
+    <div style="background:linear-gradient(135deg,var(--coral-tint),#FFF9F5);border-radius:22px;padding:18px 18px 16px;margin-top:6px;">
+      <h1 style="font-size:21px;font-weight:800;">Emma's Birthday Party</h1>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;">
+        <div class="fact-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.2"></circle></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--coral-dark);">Austin, TX</span>
+        </div>
+        <div class="fact-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><line x1="16" y1="3" x2="16" y2="7"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--coral-dark);">Sat, Jun 15 &middot; 2&ndash;4pm</span>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div style="height:5px;border-radius:999px;background:rgba(255,255,255,0.7);overflow:hidden;">
+          <div style="height:100%;width:100%;background:var(--coral);border-radius:999px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <div class="section-title">Still deciding</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 2px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span style="font-size:13px;color:var(--ink-soft);">Nothing left to answer &mdash; thanks!</span>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="section-title">What I know</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;">
+        <div class="known-chip"><span style="font-size:12px;font-weight:600;color:var(--mint-dark);">Outdoor bounce house</span></div>
+        <div class="known-chip"><span style="font-size:12px;font-weight:600;color:var(--mint-dark);">~30 kids</span></div>
+        <div class="known-chip"><span style="font-size:12px;font-weight:600;color:var(--mint-dark);">Budget: $200&ndash;400</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <div class="section-title">Providers</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="width:15px;height:15px;border-radius:999px;border:2.5px solid var(--coral-tint);border-top-color:var(--coral);flex-shrink:0;"></div>
+          <span style="font-size:13px;font-weight:700;color:var(--coral-dark);">Checking reviews &amp; reputation</span>
+        </div>
+        <div style="display:flex;gap:10px;overflow:hidden;">
+          <div class="skeleton-card" style="opacity:0.9;"></div>
+          <div class="skeleton-card" style="opacity:0.6;"></div>
+          <div class="skeleton-card" style="opacity:0.35;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --shadow-card: 0 8px 24px rgba(36,21,18,0.08);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    a { color: var(--coral); } a:hover { color: var(--coral-dark); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .blob-grey { position: absolute; width: 260px; height: 260px; border-radius: 50%; background: #E9E1DD; opacity: 0.6; bottom: -100px; left: -100px; z-index: 0; }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div class="blob-grey"></div>
+
+  <div style="position:relative;z-index:1;width:280px;text-align:center;">
+    <div style="width:64px;height:64px;border-radius:999px;background:var(--coral-tint);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="13"></line><circle cx="12" cy="16.3" r="0.9" fill="#C94F21" stroke="none"></circle></svg>
+    </div>
+
+    <h1 style="font-size:21px;font-weight:700;line-height:1.35;margin-bottom:10px;">We couldn't reach the provider search right now</h1>
+    <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;margin:0;">Something went wrong on our end &mdash; your answers are safe. Try again in a moment.</p>
+
+    <div style="margin-top:28px;background:var(--coral);color:#fff;text-align:center;border-radius:999px;padding:15px;font-size:15px;font-weight:700;box-shadow:var(--shadow-card);">Try again</div>
+    <div style="margin-top:14px;font-size:13px;color:var(--ink-soft);text-decoration:underline;">Back to conversation</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

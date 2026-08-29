@@ -1,0 +1,82 @@
+import { buildEnrichmentQuery } from "./enrichmentQuery.js";
+import { searchProviderPages } from "./firecrawlProvider.js";
+import type { SearchedPage } from "./firecrawlProvider.js";
+import { analyzeReviewText } from "../llm/reviewAnalysis.js";
+import type { ReviewAnalysisResult } from "../llm/reviewAnalysis.js";
+import { assembleInferredTags } from "./assembleInferredTags.js";
+import type { ProviderCandidate } from "../domain/provider.js";
+
+/**
+ * Confirmed during M8 planning: enriching all 8 M7-discovery candidates
+ * would push per-session sequential Gemini calls to ~16, against a
+ * free-tier cap already shown empirically (M7 real-API validation) to
+ * produce transient failures at half that volume.
+ */
+export const MAX_ENRICHMENT_CANDIDATES = 5;
+
+export type EnrichmentSearchFn = (params: { query: string; limit: number }) => Promise<SearchedPage[]>;
+
+export type AnalyzeFn = (params: {
+  url: string;
+  markdown: string;
+}) => Promise<ReviewAnalysisResult>;
+
+export interface EnrichProviderCandidatesParams {
+  candidates: ProviderCandidate[];
+  /** Injected search call; defaults to Task 17's real searchProviderPages. */
+  search?: EnrichmentSearchFn;
+  /** Injected analysis call; defaults to Task 23's real analyzeReviewText. */
+  analyze?: AnalyzeFn;
+}
+
+function buildQueryFor(candidate: ProviderCandidate): string {
+  const providerName = candidate.fields.name?.value ?? new URL(candidate.url).hostname;
+  const location = candidate.fields.location?.value;
+  return location !== undefined
+    ? buildEnrichmentQuery({ providerName, location })
+    : `${providerName} reviews`;
+}
+
+export async function enrichProviderCandidates({
+  candidates,
+  search = searchProviderPages,
+  analyze = analyzeReviewText,
+}: EnrichProviderCandidatesParams): Promise<ProviderCandidate[]> {
+  const result: ProviderCandidate[] = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i]!;
+
+    if (i >= MAX_ENRICHMENT_CANDIDATES) {
+      result.push(candidate);
+      continue;
+    }
+
+    try {
+      const query = buildQueryFor(candidate);
+      const pages = await search({ query, limit: 1 });
+      const page = pages[0];
+
+      if (!page || page.markdown === null) {
+        result.push(candidate);
+        continue;
+      }
+
+      const analysis = await analyze({ url: page.result.url, markdown: page.markdown });
+      const retrievedAt = new Date().toISOString();
+      const inferred = assembleInferredTags({
+        url: page.result.url,
+        providerUrl: candidate.url,
+        analysis,
+        retrievedAt,
+      });
+
+      result.push({ ...candidate, inferred });
+    } catch (error) {
+      console.error(`Enrichment failed for candidate ${candidate.url}:`, error);
+      result.push(candidate);
+    }
+  }
+
+  return result;
+}

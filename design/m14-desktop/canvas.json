@@ -1,0 +1,14 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1440, "h": 900, "title": "1. Initial chat (single-pane)" },
+    { "file": "Recommendations.dc.html", "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "2. Comparison (split-pane opens)" },
+    { "file": "ProviderDetails.dc.html", "x": 3040, "y": 0, "w": 1440, "h": 900, "title": "3. Provider details (split-pane)" },
+    { "file": "SimulatedQA.dc.html", "x": 0, "y": 1020, "w": 1440, "h": 900, "title": "4. Simulated Q&A (split-pane)" },
+    { "file": "ChatReopened.dc.html", "x": 1520, "y": 1020, "w": 1440, "h": 900, "title": "5. Chat reopened (split-pane)" },
+    { "file": "ErrorState.dc.html", "x": 3040, "y": 1020, "w": 1440, "h": 900, "title": "6. Right-pane-only error" }
+  ],
+  "annotations": [
+    { "id": "scope-note", "x": 0, "y": -150, "w": 460, "text": "GleeScout — Desktop / Wide-Screen Adaptation (Split-Pane Workspace)\nNon-assignment scope extension — see decisions.md D19.\nMobile screens & state machine unchanged; left pane derives from state already held (providers !== null), no new app state." }
+  ],
+  "launch": { "view": "canvas" }
+}

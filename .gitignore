@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+web-build/
+
+# secrets / local environment
+.env
+.env.*
+!.env.example
+
+# Expo / Metro
+.expo/
+.metro-health-check*
+expo-env.d.ts
+
+# logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# test / coverage output
+coverage/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# local agent settings (machine-specific)
+.claude/settings.local.json
+
+# assignment brief (company material - never publish)
+docs/*.pdf

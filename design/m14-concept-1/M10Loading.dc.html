@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint: #6FA88A; --mint-tint: #E7F5EE; --yellow: #FFD966; --purple: #9B7FD4; --purple-tint: #F1EBFC;
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    a { color: var(--coral); } a:hover { color: var(--coral-dark); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .blob-purple { position: absolute; width: 240px; height: 240px; border-radius: 44% 56% 61% 39% / 49% 42% 58% 51%; background: var(--purple); opacity: 0.16; bottom: -80px; right: -80px; z-index: 0; }
+    .step { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+    .step-icon { width: 26px; height: 26px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div class="blob-purple"></div>
+
+  <div style="position:relative;z-index:1;width:280px;text-align:center;">
+    <div style="width:64px;height:64px;border-radius:999px;border:4px solid var(--coral-tint);border-top-color:var(--coral);margin:0 auto 26px;"></div>
+
+    <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--coral);">Sandi's Moonwalks</span>
+    <h1 style="font-size:22px;font-weight:700;line-height:1.35;margin-top:8px;">Getting this provider ready for you</h1>
+
+    <div style="text-align:left;margin-top:26px;">
+      <div class="step">
+        <div class="step-icon" style="background:var(--mint-tint);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <span style="font-size:14px;color:var(--ink-soft);text-decoration:line-through;">Checking what we already know</span>
+      </div>
+      <div class="step">
+        <div class="step-icon" style="background:var(--coral-tint);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E8622E" stroke-width="3"><circle cx="12" cy="12" r="9"></circle></svg>
+        </div>
+        <span style="font-size:14px;font-weight:600;color:var(--ink);">Figuring out what's still unclear</span>
+      </div>
+      <div class="step">
+        <div class="step-icon" style="background:var(--surface);border:1px solid var(--border);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="3"><circle cx="12" cy="12" r="9"></circle></svg>
+        </div>
+        <span style="font-size:14px;color:var(--ink-faint);">Preparing your questions</span>
+      </div>
+    </div>
+
+    <p style="font-size:12px;color:var(--ink-faint);margin-top:26px;">This usually takes a few seconds.</p>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

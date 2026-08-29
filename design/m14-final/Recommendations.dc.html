@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint-tint: #E7F5EE; --mint-dark: #3E6B54; --purple: #9B7FD4; --purple-tint: #F1EBFC;
+      --shadow-card: 0 6px 18px rgba(36,21,18,0.07); --shadow-soft: 0 2px 10px rgba(36,21,18,0.06); --radius-input: 16px;
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .chat-pill { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-input); padding: 11px 15px; box-shadow: var(--shadow-soft); }
+    .mini-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--coral-tint); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+    .toolbar-pill { display: flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: #fff; }
+    .row { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow-card); }
+    .row-top { border: 1.5px solid var(--coral); }
+    .stat { display: flex; flex-direction: column; align-items: flex-start; }
+    .stat-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-faint); }
+    .stat-value { font-size: 13px; font-weight: 700; margin-top: 1px; }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div style="padding:18px 20px 0;flex-shrink:0;">
+    <div class="chat-pill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A7A76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+      <span style="font-size:12.5px;font-weight:700;color:var(--ink-soft);">Chat</span>
+      <div style="display:flex;gap:5px;flex:1;overflow:hidden;">
+        <div class="mini-chip"><span style="font-size:10px;font-weight:700;color:var(--coral-dark);">Outdoor bounce house &middot; Austin</span></div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 4px;">
+    <div>
+      <h1 style="font-size:18px;font-weight:700;">These are your best matches</h1>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 10px;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink-soft);">5 matches</span>
+    <div class="toolbar-pill">
+      Best match
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8A7A76" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:0 20px 14px;">
+
+    <div class="row row-top">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="background:var(--coral);color:#fff;border-radius:999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
+            <span style="font-size:14.5px;font-weight:700;">Sandi's Moonwalks</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+            <span style="font-size:10.5px;color:var(--mint-dark);font-weight:600;">6 facts sourced</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5F3FA8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+            <span style="font-size:10.5px;color:#5F3FA8;font-weight:600;">2 inferred</span>
+          </div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="stat"><span class="stat-label">Match</span><span class="stat-value" style="color:var(--coral-dark);">82%</span></div>
+        <div class="stat"><span class="stat-label">Price</span><span class="stat-value">$180+</span></div>
+        <div class="stat"><span class="stat-label">Rating</span><span class="stat-value">4.8</span></div>
+        <div class="stat"><span class="stat-label">Signals</span><span class="stat-value" style="font-weight:600;">4 / 5</span></div>
+      </div>
+      <p style="margin:9px 0 0;font-size:11px;color:var(--coral-dark);font-style:italic;line-height:1.4;">Fits your budget and outdoor setup; strong independently-sourced rating.</p>
+    </div>
+
+    <div class="row">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="background:var(--border);color:var(--ink-soft);border-radius:999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">2</div>
+            <span style="font-size:14.5px;font-weight:700;">Austin Bounce Co.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+            <span style="font-size:10.5px;color:var(--mint-dark);font-weight:600;">5 facts sourced</span>
+          </div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="stat"><span class="stat-label">Match</span><span class="stat-value">76%</span></div>
+        <div class="stat"><span class="stat-label">Price</span><span class="stat-value">$220+</span></div>
+        <div class="stat"><span class="stat-label">Rating</span><span class="stat-value">4.6</span></div>
+        <div class="stat"><span class="stat-label">Signals</span><span class="stat-value" style="font-weight:600;">5 / 5</span></div>
+      </div>
+      <p style="margin:9px 0 0;font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.4;">Good all-round fit; slightly over your stated budget range.</p>
+    </div>
+
+    <div class="row" style="margin-bottom:2px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="background:var(--border);color:var(--ink-soft);border-radius:999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">3</div>
+            <span style="font-size:14.5px;font-weight:700;">Lone Star Inflatables</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+            <span style="font-size:10.5px;color:var(--mint-dark);font-weight:600;">3 facts sourced</span>
+          </div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="stat"><span class="stat-label">Match</span><span class="stat-value">68%</span></div>
+        <div class="stat"><span class="stat-label">Price</span><span class="stat-value" style="color:var(--ink-faint);font-weight:600;">&mdash;</span></div>
+        <div class="stat"><span class="stat-label">Rating</span><span class="stat-value">4.9</span></div>
+        <div class="stat"><span class="stat-label">Signals</span><span class="stat-value" style="font-weight:600;">2 / 5</span></div>
+      </div>
+      <p style="margin:9px 0 0;font-size:11px;color:var(--ink-faint);font-style:italic;line-height:1.4;">Strong rating, but pricing couldn't be confirmed &mdash; fewer signals overall.</p>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

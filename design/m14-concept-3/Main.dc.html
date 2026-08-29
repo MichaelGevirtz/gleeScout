@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint: #6FA88A; --mint-tint: #E7F5EE; --mint-dark: #3E6B54; --yellow: #FFD966; --purple: #9B7FD4; --purple-tint: #F1EBFC;
+      --radius-card: 18px; --shadow-card: 0 6px 18px rgba(36,21,18,0.07); --shadow-soft: 0 2px 10px rgba(36,21,18,0.06);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .fact-pill { display: flex; align-items: center; gap: 5px; }
+    .known-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--mint-tint); border-radius: 999px; padding: 7px 12px; }
+    .section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+  </style>
+</helmet>
+
+<div class="frame">
+
+  <div style="padding:20px 20px 0;flex-shrink:0;">
+    <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);">Your event</span>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:8px 20px 20px;">
+
+    <div style="background:linear-gradient(135deg,var(--coral-tint),#FFF9F5);border-radius:22px;padding:18px 18px 16px;margin-top:6px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <h1 style="font-size:21px;font-weight:800;line-height:1.25;max-width:250px;">Emma's Birthday Party</h1>
+        <div style="width:32px;height:32px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-soft);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;">
+        <div class="fact-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.2"></circle></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--coral-dark);">Austin, TX</span>
+        </div>
+        <div class="fact-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"></path><circle cx="17" cy="9" r="2.4"></circle><path d="M15 14c2.8.4 5 2.3 5 6"></path></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--coral-dark);">~30 kids</span>
+        </div>
+        <div class="fact-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><line x1="16" y1="3" x2="16" y2="7"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--ink-faint);font-style:italic;">Date TBD</span>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div style="height:5px;border-radius:999px;background:rgba(255,255,255,0.7);overflow:hidden;">
+          <div style="height:100%;width:55%;background:var(--coral);border-radius:999px;"></div>
+        </div>
+        <span style="font-size:11px;color:var(--coral-dark);font-weight:600;margin-top:6px;display:inline-block;">A few more details and I can start looking</span>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="section-title">Still deciding</div>
+      <div style="background:var(--surface);border:1.5px solid var(--coral-tint);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-soft);">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="width:19px;height:19px;border-radius:999px;border:2px solid var(--coral);flex-shrink:0;"></div>
+          <span style="flex:1;font-size:14px;font-weight:700;">What date are you planning it for?</span>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+          <div style="flex:1;height:44px;border-radius:12px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;padding:0 14px;color:var(--ink-faint);font-size:13.5px;">Type your answer&hellip;</div>
+          <div style="width:44px;height:44px;border-radius:12px;background:var(--coral);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <div class="section-title">What I know</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="known-chip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="12" rx="2"></rect><path d="M3 13h18"></path><path d="M12 9v12"></path><path d="M12 9c-1.5-4-6-4-6-1 0 1.7 2 1 6 1z"></path><path d="M12 9c1.5-4 6-4 6-1 0 1.7-2 1-6 1z"></path></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--mint-dark);">Outdoor bounce house</span>
+        </div>
+        <div class="known-chip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"></line><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"></line><line x1="2" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="22" y2="12"></line><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"></line><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"></line></svg>
+          <span style="font-size:12.5px;font-weight:600;color:var(--mint-dark);">Outdoor</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <div class="section-title">Providers</div>
+      <div style="border:1px dashed var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#BDB1AD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+        <span style="font-size:12.5px;color:var(--ink-faint);line-height:1.5;">I'll start finding real providers here once I know a bit more</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

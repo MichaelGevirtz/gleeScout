@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --yellow: #FFD966; --purple: #9B7FD4;
+      --radius-input: 16px; --shadow-card: 0 8px 24px rgba(36,21,18,0.08); --shadow-soft: 0 2px 10px rgba(36,21,18,0.06);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 1440px; height: 900px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+    .blob-yellow { position: absolute; width: 420px; height: 420px; border-radius: 50%; background: var(--yellow); opacity: 0.13; bottom: -180px; left: -140px; z-index: 0; }
+    .blob-purple { position: absolute; width: 380px; height: 380px; border-radius: 44% 56% 61% 39% / 49% 42% 58% 51%; background: var(--purple); opacity: 0.11; top: -140px; right: -120px; z-index: 0; }
+    .bubble-assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; border-top-left-radius: 6px; padding: 13px 16px; max-width: 78%; box-shadow: var(--shadow-soft); }
+    .bubble-user { align-self: flex-end; background: var(--coral); color: #fff; border-radius: 18px; border-top-right-radius: 6px; padding: 13px 16px; max-width: 78%; }
+    .mini-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--coral-tint); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+    .column { position: relative; z-index: 1; width: 640px; height: 100%; display: flex; flex-direction: column; }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div class="blob-yellow"></div>
+  <div class="blob-purple"></div>
+
+  <div class="column">
+    <div style="display:flex;align-items:center;gap:12px;padding:36px 0 20px;">
+      <div style="width:40px;height:40px;border-radius:999px;background:var(--coral-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"></path></svg>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700;">GleeScout</div>
+        <div style="font-size:12.5px;color:var(--ink-soft);">Planning your event</div>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:0 2px;">
+
+      <div class="bubble-assistant">
+        <p style="margin:0;font-size:14px;line-height:1.55;">Hey! Tell me about your event &mdash; what are you planning, and what do you need?</p>
+      </div>
+
+      <div class="bubble-user">
+        <p style="margin:0;font-size:14px;line-height:1.55;">I'm planning my daughter's birthday party in Austin for about 30 kids. I'd like an outdoor bounce house.</p>
+      </div>
+
+      <div class="bubble-assistant">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+          <div class="mini-chip"><span style="font-size:11px;font-weight:700;color:var(--coral-dark);">Bounce house</span></div>
+          <div class="mini-chip"><span style="font-size:11px;font-weight:700;color:var(--coral-dark);">Austin, TX</span></div>
+          <div class="mini-chip"><span style="font-size:11px;font-weight:700;color:var(--coral-dark);">~30 kids</span></div>
+          <div class="mini-chip"><span style="font-size:11px;font-weight:700;color:var(--coral-dark);">Outdoor</span></div>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.55;">Got it &mdash; an outdoor birthday party in Austin for about 30 kids. What date are you planning it for?</p>
+      </div>
+
+      <div class="bubble-user">
+        <p style="margin:0;font-size:14px;line-height:1.55;">June 15th, from 2 to 4pm</p>
+      </div>
+
+      <div class="bubble-assistant">
+        <p style="margin:0;font-size:14px;line-height:1.55;">Perfect, noted! Last thing &mdash; roughly what's your budget for the bounce house?</p>
+      </div>
+
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A7A76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span style="flex:1;font-size:13px;font-weight:600;color:var(--ink-soft);">What I know so far</span>
+      <div style="background:var(--coral-tint);color:var(--coral-dark);border-radius:999px;width:19px;height:19px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;">4</div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;padding-bottom:36px;">
+      <div style="flex:1;height:52px;border-radius:var(--radius-input);background:#fff;border:1px solid var(--border);display:flex;align-items:center;padding:0 18px;color:var(--ink-faint);font-size:15px;">Type your answer&hellip;</div>
+      <div style="width:52px;height:52px;border-radius:999px;background:var(--coral);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

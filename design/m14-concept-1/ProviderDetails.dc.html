@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint: #6FA88A; --mint-tint: #E7F5EE; --yellow: #FFD966; --purple: #9B7FD4; --purple-tint: #F1EBFC;
+      --shadow-card: 0 8px 24px rgba(36,21,18,0.08); --shadow-soft: 0 2px 10px rgba(36,21,18,0.06);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    a { color: var(--coral); } a:hover { color: var(--coral-dark); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .section-label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 18px 0 10px; }
+    .fact-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+    .fact-label { font-size: 13px; color: var(--ink-soft); flex-shrink: 0; }
+    .fact-value { font-size: 13px; font-weight: 600; text-align: right; }
+    .fact-source { font-size: 10px; color: var(--ink-faint); display: block; margin-top: 1px; }
+    .evidence-card { background: var(--purple-tint); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+    .dim-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .dim-track { flex: 1; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .dim-fill { height: 100%; border-radius: 999px; background: var(--coral); }
+    .dim-track-empty { flex: 1; height: 6px; border-radius: 999px; border: 1px dashed var(--ink-faint); }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div style="display:flex;align-items:center;gap:14px;padding:20px 20px 12px;background:var(--bg);">
+    <div style="width:40px;height:40px;border-radius:999px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#241512" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </div>
+    <h2 style="font-size:19px;font-weight:700;">Sandi's Moonwalks</h2>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:0 20px 12px;">
+    <div style="display:flex;gap:8px;">
+      <div style="width:76px;height:76px;border-radius:14px;background:linear-gradient(135deg,#FFE3D3,#FBEFE6);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8622E" stroke-width="1.6" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.8"></circle><path d="M21 15l-5-5-9 9"></path></svg>
+      </div>
+      <div style="width:76px;height:76px;border-radius:14px;background:linear-gradient(135deg,#FBEFE6,#FFE3D3);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8622E" stroke-width="1.6" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.8"></circle><path d="M21 15l-5-5-9 9"></path></svg>
+      </div>
+      <div style="width:76px;height:76px;border-radius:14px;background:linear-gradient(135deg,#FFE3D3,#FBEFE6);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8622E" stroke-width="1.6" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.8"></circle><path d="M21 15l-5-5-9 9"></path></svg>
+      </div>
+    </div>
+
+    <div class="section-label" style="color:#3E6B54;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+      Sourced facts
+    </div>
+
+    <div class="fact-row">
+      <span class="fact-label">Pricing</span>
+      <div><span class="fact-value">From $180</span><span class="fact-source">via sandismoonwalks.com</span></div>
+    </div>
+    <div class="fact-row">
+      <span class="fact-label">Availability</span>
+      <div><span class="fact-value">Weekends, Apr&ndash;Oct</span><span class="fact-source">via sandismoonwalks.com</span></div>
+    </div>
+    <div class="fact-row">
+      <span class="fact-label">Rating</span>
+      <div><span class="fact-value">4.8 (932 reviews)</span><span class="fact-source">via google.com</span></div>
+    </div>
+    <div class="fact-row">
+      <span class="fact-label">Services offered</span>
+      <div><span class="fact-value">Bounce houses, slides, tables</span><span class="fact-source">via sandismoonwalks.com</span></div>
+    </div>
+    <div class="fact-row" style="border-bottom:none;">
+      <span class="fact-label">Contact</span>
+      <div><span class="fact-value">Phone &amp; online form</span><span class="fact-source">via sandismoonwalks.com</span></div>
+    </div>
+
+    <div class="section-label" style="color:#5F3FA8;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F3FA8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+      Inferred from reviews
+    </div>
+    <div class="evidence-card">
+      <div style="font-size:13px;font-weight:700;color:#5F3FA8;margin-bottom:3px;">Great with toddlers</div>
+      <div style="font-size:12px;color:var(--ink-soft);font-style:italic;line-height:1.4;">&ldquo;My 2-year-old had a blast and never once looked scared&rdquo;</div>
+      <div style="font-size:10px;color:var(--ink-faint);margin-top:5px;">provider website review</div>
+    </div>
+    <div class="evidence-card" style="margin-bottom:0;">
+      <div style="font-size:13px;font-weight:700;color:#5F3FA8;margin-bottom:3px;">Fast response time</div>
+      <div style="font-size:12px;color:var(--ink-soft);font-style:italic;line-height:1.4;">&ldquo;Booked us back within the hour&rdquo;</div>
+      <div style="font-size:10px;color:var(--ink-faint);margin-top:5px;">google review</div>
+    </div>
+
+    <div class="section-label" style="color:var(--ink-soft);">Why we ranked this #2</div>
+    <div class="dim-row"><span style="font-size:12px;width:120px;flex-shrink:0;color:var(--ink-soft);">Requirement match</span><div class="dim-track"><div class="dim-fill" style="width:88%;"></div></div></div>
+    <div class="dim-row"><span style="font-size:12px;width:120px;flex-shrink:0;color:var(--ink-soft);">Location fit</span><div class="dim-track"><div class="dim-fill" style="width:95%;"></div></div></div>
+    <div class="dim-row"><span style="font-size:12px;width:120px;flex-shrink:0;color:var(--ink-soft);">Price fit</span><div class="dim-track"><div class="dim-fill" style="width:70%;"></div></div></div>
+    <div class="dim-row"><span style="font-size:12px;width:120px;flex-shrink:0;color:var(--ink-soft);">Reputation</span><div class="dim-track"><div class="dim-fill" style="width:96%;"></div></div></div>
+    <div class="dim-row" style="margin-bottom:2px;"><span style="font-size:12px;width:120px;flex-shrink:0;color:var(--ink-faint);">Evidence quality</span><div class="dim-track-empty"></div><span style="font-size:10px;color:var(--ink-faint);flex-shrink:0;">not enough data</span></div>
+  </div>
+
+  <div style="padding:14px 20px 22px;border-top:1px solid var(--border);background:var(--bg);">
+    <div style="background:var(--coral);color:#fff;text-align:center;border-radius:999px;padding:16px;font-size:15px;font-weight:700;box-shadow:var(--shadow-card);">Choose Sandi's Moonwalks &rarr;</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

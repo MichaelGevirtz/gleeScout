@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint-tint: #E7F5EE; --mint-dark: #3E6B54; --purple: #9B7FD4; --purple-tint: #F1EBFC;
+      --shadow-card: 0 8px 24px rgba(36,21,18,0.08);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 1440px; height: 900px; background: var(--bg); overflow: hidden; display: flex; }
+    .left-pane { width: 320px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 32px 26px; }
+    .right-pane { flex: 1; overflow-y: auto; display: flex; justify-content: center; }
+    .right-inner { width: 100%; max-width: 760px; padding: 48px 44px; }
+    .stat-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); }
+    .stat-value { font-size: 13.5px; font-weight: 700; margin-top: 2px; }
+    .ctx-item { display: flex; align-items: center; gap: 11px; padding: 9px 0; }
+    .ctx-icon { width: 30px; height: 30px; border-radius: 9px; background: var(--coral-tint); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pane-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--border); border-radius: 999px; padding: 13px; font-size: 13px; font-weight: 700; color: var(--ink-soft); background: #fff; }
+    .section-label { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 26px 0 12px; }
+    .fact-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); gap: 14px; }
+    .fact-label { font-size: 13.5px; color: var(--ink-soft); flex-shrink: 0; }
+    .fact-value { font-size: 13.5px; font-weight: 600; text-align: right; }
+    .dim-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+    .dim-track { flex: 1; height: 7px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .dim-fill { height: 100%; border-radius: 999px; background: var(--coral); }
+    .dim-track-empty { flex: 1; height: 7px; border-radius: 999px; border: 1px dashed var(--ink-faint); }
+  </style>
+</helmet>
+
+<div class="frame">
+
+  <div class="left-pane">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:26px;">
+      <div style="width:34px;height:34px;border-radius:999px;background:var(--coral-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"></path></svg>
+      </div>
+      <div style="font-size:14.5px;font-weight:700;">GleeScout</div>
+    </div>
+
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2px;">Your event</div>
+
+    <div class="ctx-item">
+      <div class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="12" rx="2"></rect><path d="M3 13h18"></path><path d="M12 9v12"></path><path d="M12 9c-1.5-4-6-4-6-1 0 1.7 2 1 6 1z"></path><path d="M12 9c1.5-4 6-4 6-1 0 1.7-2 1-6 1z"></path></svg></div>
+      <div><div class="stat-label">Service</div><div class="stat-value">Bounce house</div></div>
+    </div>
+    <div class="ctx-item">
+      <div class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><line x1="16" y1="3" x2="16" y2="7"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
+      <div><div class="stat-label">Date &amp; time</div><div class="stat-value">June 15 &middot; 2&ndash;4pm</div></div>
+    </div>
+    <div class="ctx-item">
+      <div class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.2"></circle></svg></div>
+      <div><div class="stat-label">Location</div><div class="stat-value">Austin, TX</div></div>
+    </div>
+    <div class="ctx-item">
+      <div class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"></path><circle cx="17" cy="9" r="2.4"></circle><path d="M15 14c2.8.4 5 2.3 5 6"></path></svg></div>
+      <div><div class="stat-label">Guests</div><div class="stat-value">~30 kids</div></div>
+    </div>
+    <div class="ctx-item" style="border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:18px;">
+      <div class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"></line><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"></line><line x1="2" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="22" y2="12"></line><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"></line><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"></line></svg></div>
+      <div><div class="stat-label">Setting</div><div class="stat-value">Outdoor</div></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+      <span style="font-size:12px;font-weight:700;color:var(--mint-dark);">5 matches found</span>
+    </div>
+
+    <div style="background:var(--coral-tint);border-radius:14px;padding:11px 13px;margin-top:16px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--coral-dark);opacity:0.7;">Currently viewing</div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--coral-dark);margin-top:2px;">Sandi's Moonwalks</div>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div class="pane-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A7A76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+      Chat
+    </div>
+  </div>
+
+  <div class="right-pane">
+    <div class="right-inner">
+      <h1 style="font-size:24px;font-weight:700;">Sandi's Moonwalks</h1>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+        <div style="background:var(--coral);color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;">Ranked #1 &middot; 82% match</div>
+      </div>
+
+      <div class="section-label" style="color:var(--mint-dark);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+        Sourced facts
+      </div>
+      <div class="fact-row"><span class="fact-label">Pricing</span><span class="fact-value">From $180</span></div>
+      <div class="fact-row"><span class="fact-label">Rating</span><span class="fact-value">4.8 (932 reviews)</span></div>
+      <div class="fact-row"><span class="fact-label">Availability</span><span class="fact-value">Weekends, Apr&ndash;Oct</span></div>
+      <div class="fact-row" style="border-bottom:none;"><span class="fact-label">Services</span><span class="fact-value">Bounce houses, slides</span></div>
+
+      <div class="section-label" style="color:#5F3FA8;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F3FA8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+        Inferred from reviews
+      </div>
+      <div style="background:var(--purple-tint);border-radius:14px;padding:13px 15px;">
+        <div style="font-size:13px;font-weight:700;color:#5F3FA8;margin-bottom:3px;">Great with toddlers</div>
+        <div style="font-size:12.5px;color:var(--ink-soft);font-style:italic;">&ldquo;My 2-year-old had a blast&rdquo; &mdash; provider website review</div>
+      </div>
+      <p style="font-size:11.5px;color:var(--ink-faint);margin:8px 0 0;line-height:1.4;">Inferred from review patterns &mdash; not confirmed by the provider.</p>
+
+      <div class="section-label" style="color:var(--ink-soft);">Why it's ranked #1</div>
+      <div class="dim-row"><span style="font-size:12.5px;width:130px;flex-shrink:0;color:var(--ink-soft);">Requirement match</span><div class="dim-track"><div class="dim-fill" style="width:88%;"></div></div></div>
+      <div class="dim-row"><span style="font-size:12.5px;width:130px;flex-shrink:0;color:var(--ink-soft);">Location fit</span><div class="dim-track"><div class="dim-fill" style="width:95%;"></div></div></div>
+      <div class="dim-row"><span style="font-size:12.5px;width:130px;flex-shrink:0;color:var(--ink-soft);">Price fit</span><div class="dim-track"><div class="dim-fill" style="width:70%;"></div></div></div>
+      <div class="dim-row"><span style="font-size:12.5px;width:130px;flex-shrink:0;color:var(--ink-soft);">Reputation</span><div class="dim-track"><div class="dim-fill" style="width:96%;"></div></div></div>
+      <div class="dim-row" style="margin-bottom:0;"><span style="font-size:12.5px;width:130px;flex-shrink:0;color:var(--ink-faint);">Evidence quality</span><div class="dim-track-empty"></div><span style="font-size:10.5px;color:var(--ink-faint);flex-shrink:0;">not enough data</span></div>
+
+      <div style="margin-top:28px;background:var(--coral);color:#fff;text-align:center;border-radius:999px;padding:16px;font-size:15px;font-weight:700;box-shadow:var(--shadow-card);max-width:340px;">Select Sandi's Moonwalks &rarr;</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

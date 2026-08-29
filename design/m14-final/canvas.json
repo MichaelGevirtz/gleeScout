@@ -1,0 +1,21 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844 },
+    { "file": "Transition.dc.html", "x": 520, "y": 0, "w": 390, "h": 844 },
+    { "file": "Recommendations.dc.html", "x": 1040, "y": 0, "w": 390, "h": 844 },
+    { "file": "ProviderDetails.dc.html", "x": 1560, "y": 0, "w": 390, "h": 844 },
+    { "file": "M10Loading.dc.html", "x": 0, "y": 1014, "w": 390, "h": 844 },
+    { "file": "SimulatedQA.dc.html", "x": 520, "y": 1014, "w": 390, "h": 844 },
+    { "file": "ErrorState.dc.html", "x": 1040, "y": 1014, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    { "id": "note-state1", "x": 0, "y": -110, "w": 390, "text": "STATE 1 — Chat-first (from Concept 1)\nOpen-ended opener. One message extracts multiple facts at once; assistant recaps inline and asks one next thing — no fixed sequence. \"What I know so far\" stays a secondary expandable bar, never a form." },
+    { "id": "note-transition", "x": 520, "y": -110, "w": 390, "text": "TRANSITION\nChat collapses into a small labeled \"Chat\" pill (chat-bubble icon, not a search icon — resolves the open concern from the Concept 2 review) while the comparison board builds beneath it." },
+    { "id": "note-state2", "x": 1040, "y": -110, "w": 390, "text": "STATE 2 — Comparison-first (from Concept 2)\nAll ~5 matches visible/comparable at once, not a carousel. Match/Price/Rating/Signals + a one-line rationale per row. \"Chat\" pill stays reachable, now secondary." },
+    { "id": "note-state3", "x": 1560, "y": -110, "w": 390, "text": "STATE 3 — Provider details\nSheet over the dimmed board. FACT vs INFERRED in separate labeled sections; INFERRED carries an explicit \"not confirmed by the provider\" caption." },
+    { "id": "note-state4a", "x": 0, "y": 924, "w": 390, "text": "STATE 4a — M10 loading\nSame sheet. Copy states outright that the provider hasn't been contacted yet." },
+    { "id": "note-state4b", "x": 520, "y": 924, "w": 390, "text": "STATE 4b — M11 simulated answers\nEvery answer is tagged \"SIMULATED · NOT CONFIRMED\" plus a persistent banner spelling out no real contact happened — applied to availability, setup/policy, and price alike." },
+    { "id": "note-error", "x": 1040, "y": 924, "w": 390, "text": "Error state\nInline, chat pill still reachable — nothing already gathered is lost." }
+  ],
+  "launch": { "view": "canvas" }
+}

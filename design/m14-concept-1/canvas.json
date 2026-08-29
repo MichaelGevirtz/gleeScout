@@ -1,0 +1,23 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844 },
+    { "file": "Requirements.dc.html", "x": 520, "y": 0, "w": 390, "h": 844 },
+    { "file": "SearchLoading.dc.html", "x": 1040, "y": 0, "w": 390, "h": 844 },
+    { "file": "Recommendations.dc.html", "x": 1560, "y": 0, "w": 390, "h": 844 },
+    { "file": "ProviderDetails.dc.html", "x": 0, "y": 1014, "w": 390, "h": 844 },
+    { "file": "M10Loading.dc.html", "x": 520, "y": 1014, "w": 390, "h": 844 },
+    { "file": "SimulatedQA.dc.html", "x": 1040, "y": 1014, "w": 390, "h": 844 },
+    { "file": "ErrorState.dc.html", "x": 1560, "y": 1014, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    { "id": "note-main", "x": 0, "y": -90, "w": 390, "text": "1. Conversation\nReal chat transcript, open-ended opener. One free-text message satisfies several requirements at once; assistant recaps inline and asks the next missing thing in-line — two full question cycles shown, no button between them." },
+    { "id": "note-req", "x": 520, "y": -90, "w": 390, "text": "2. What I know so far\nA bottom sheet OVER the chat (never a separate page — note the dimmed chat sliver behind it). Known items only, flowing chips, no required/optional badges, no missing-field rows, no continue button. Optional items are a muted secondary cluster, not a form field." },
+    { "id": "note-search", "x": 1040, "y": -90, "w": 390, "text": "3. Search loading (M7→M8→M9)\nDiscover → enrich → rank, shown as sequential steps." },
+    { "id": "note-recs", "x": 1560, "y": -90, "w": 390, "text": "4. Recommendations\nSwipe deck, one provider at a time. FACT + INFERRED only — no SIMULATED yet (D14)." },
+    { "id": "note-details", "x": 0, "y": 924, "w": 390, "text": "5. Provider details + selection\nFull FACT list, evidence-backed INFERRED tags, per-dimension score bars (dashed = no data, D13h)." },
+    { "id": "note-m10", "x": 520, "y": 924, "w": 390, "text": "6. M10 loading\nDeterministic gap analysis + question prep — still no simulated content." },
+    { "id": "note-qa", "x": 1040, "y": 924, "w": 390, "text": "7. M10 questions + M11 simulated answers\nDashed amber cards, persistent disclosure banner: no real contact happened." },
+    { "id": "note-error", "x": 1560, "y": 924, "w": 390, "text": "8. Error state\nUpstream LLM / research failure (502) — honest tone, answers preserved, retry." }
+  ],
+  "launch": { "view": "canvas" }
+}

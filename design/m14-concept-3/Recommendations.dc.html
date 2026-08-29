@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #FFFDFB; --surface: #FFFFFF; --ink: #241512; --ink-soft: #8A7A76; --ink-faint: #BDB1AD;
+      --border: #F0E6E1; --coral: #E8622E; --coral-dark: #C94F21; --coral-tint: #FFEDE3;
+      --mint-dark: #3E6B54; --purple: #9B7FD4; --purple-tint: #F1EBFC;
+      --shadow-card: 0 6px 18px rgba(36,21,18,0.07); --shadow-soft: 0 2px 10px rgba(36,21,18,0.06);
+    }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
+    h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; }
+    .frame { position: relative; width: 390px; height: 844px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+    .mini-card { width: 148px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px; flex-shrink: 0; box-shadow: var(--shadow-soft); }
+  </style>
+</helmet>
+
+<div class="frame">
+  <div style="padding:20px 20px 0;flex-shrink:0;">
+    <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);">Your event</span>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:8px 20px 20px;">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--coral-tint);border-radius:16px;padding:12px 16px;margin-top:6px;">
+      <span style="font-size:14px;font-weight:700;">Emma's Birthday Party</span>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="font-size:11.5px;color:var(--coral-dark);font-weight:600;">Jun 15 &middot; Austin, TX</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C94F21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;display:flex;align-items:baseline;justify-content:space-between;">
+      <div class="section-title" style="margin-bottom:0;">Providers &middot; 5 found</div>
+      <span style="font-size:11.5px;color:var(--ink-faint);">swipe &rarr;</span>
+    </div>
+
+    <div style="display:flex;gap:10px;overflow-x:auto;padding:10px 0 4px;margin:0 -2px;">
+      <div class="mini-card" style="border:1.5px solid var(--coral);">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+          <div style="background:var(--coral);color:#fff;border-radius:999px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">1</div>
+          <span style="font-size:12.5px;font-weight:700;">Sandi's Moonwalks</span>
+        </div>
+        <div style="font-size:17px;font-weight:800;color:var(--coral-dark);">82%</div>
+        <div style="font-size:10.5px;color:var(--ink-faint);margin-bottom:6px;">match</div>
+        <div style="font-size:11px;color:var(--ink-soft);">$180+ &middot; &#9733; 4.8</div>
+      </div>
+      <div class="mini-card">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+          <div style="background:var(--border);color:var(--ink-soft);border-radius:999px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">2</div>
+          <span style="font-size:12.5px;font-weight:700;">Austin Bounce Co.</span>
+        </div>
+        <div style="font-size:17px;font-weight:800;">76%</div>
+        <div style="font-size:10.5px;color:var(--ink-faint);margin-bottom:6px;">match</div>
+        <div style="font-size:11px;color:var(--ink-soft);">$220+ &middot; &#9733; 4.6</div>
+      </div>
+      <div class="mini-card">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+          <div style="background:var(--border);color:var(--ink-soft);border-radius:999px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">3</div>
+          <span style="font-size:12.5px;font-weight:700;">Lone Star Inflatables</span>
+        </div>
+        <div style="font-size:17px;font-weight:800;">68%</div>
+        <div style="font-size:10.5px;color:var(--ink-faint);margin-bottom:6px;">match</div>
+        <div style="font-size:11px;color:var(--ink-soft);">&mdash; &middot; &#9733; 4.9</div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <div class="section-title">Top match</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow-card);">
+        <div style="height:110px;border-radius:13px;background:linear-gradient(135deg,#FFE3D3,#FBEFE6);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E8622E" stroke-width="1.6" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.8"></circle><path d="M21 15l-5-5-9 9"></path></svg>
+        </div>
+        <h3 style="font-size:16px;font-weight:700;">Sandi's Moonwalks</h3>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3E6B54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8.5 8 9 4.5-.5 8-4 8-9V6Z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+          <span style="font-size:11px;color:var(--mint-dark);font-weight:600;">4 facts sourced</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5F3FA8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-left:5px;"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+          <span style="font-size:11px;color:#5F3FA8;font-weight:600;">2 inferred</span>
+        </div>
+        <div style="background:var(--coral-tint);border-radius:12px;padding:10px 12px;margin-top:12px;">
+          <p style="margin:0;font-size:12px;color:var(--coral-dark);font-style:italic;line-height:1.5;">&ldquo;Great match on your budget and outdoor setup; strong, independently-sourced rating.&rdquo;</p>
+        </div>
+        <div style="margin-top:14px;background:var(--coral);color:#fff;text-align:center;border-radius:999px;padding:13px;font-size:14px;font-weight:700;">View full details</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
