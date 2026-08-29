@@ -74,7 +74,7 @@ export default function ContextPanel({
       </View>
 
       <Text testID="context-match-count" style={styles.matchCount}>
-        {matchCount} matches found
+        {matchCount} providers
       </Text>
 
       {currentlyViewing !== undefined && (
@@ -91,7 +91,7 @@ export default function ContextPanel({
         onPress={isChatOpen ? onBackToMatches : onOpenChat}
         style={styles.button}
       >
-        <Text style={styles.buttonLabel}>{isChatOpen ? "Back to matches" : "Chat"}</Text>
+        <Text style={styles.buttonLabel}>{isChatOpen ? "Back to matches" : "Back to chat"}</Text>
       </Pressable>
     </View>
   );
@@ -161,10 +161,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: "#111827",
+    backgroundColor: "#eef2ff",
+    borderWidth: 1,
+    borderColor: "#c7d2fe",
   },
   buttonLabel: {
-    color: "#ffffff",
+    color: "#4338ca",
     fontWeight: "700",
     fontSize: 14,
   },

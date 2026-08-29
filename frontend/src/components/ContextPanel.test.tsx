@@ -42,10 +42,10 @@ describe("ContextPanel", () => {
     expect(screen.queryByTestId("context-row-theme")).toBeNull();
   });
 
-  it("renders '{matchCount} matches found' for the given count", async () => {
+  it("renders '{matchCount} providers' for the given count", async () => {
     await render(<ContextPanel {...baseProps()} matchCount={5} />);
 
-    expect(screen.getByTestId("context-match-count")).toHaveTextContent("5 matches found");
+    expect(screen.getByTestId("context-match-count")).toHaveTextContent("5 providers");
   });
 
   it("omits the currently-viewing block when the prop is undefined", async () => {
@@ -62,12 +62,12 @@ describe("ContextPanel", () => {
     );
   });
 
-  it("renders 'Chat' and calls onOpenChat on press when isChatOpen=false", async () => {
+  it("renders 'Back to chat' and calls onOpenChat on press when isChatOpen=false", async () => {
     const onOpenChat = jest.fn();
     await render(<ContextPanel {...baseProps()} isChatOpen={false} onOpenChat={onOpenChat} />);
 
     const button = screen.getByTestId("context-panel-button");
-    expect(button).toHaveTextContent("Chat");
+    expect(button).toHaveTextContent("Back to chat");
 
     await fireEvent.press(button);
 

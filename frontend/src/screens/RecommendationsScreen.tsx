@@ -64,11 +64,23 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
 
   return (
     <ScrollView testID="recommendations-screen" style={styles.container}>
-      {/* Decorative only — real client-side sort is deferred (Open Decision #4, m14-ux-spec.md). */}
-      <View testID="sort-control" style={styles.sortRow}>
-        <Text style={styles.sortLabel}>Sort: Best match</Text>
+      <View testID="recommendations-header" style={styles.header}>
+        <Text testID="recommendations-heading" style={styles.heading}>
+          Your best matches
+        </Text>
+        <Text testID="recommendations-subtitle" style={styles.subtitle}>
+          Based on your requirements
+        </Text>
+        <View style={styles.metaRow}>
+          <Text testID="recommendations-count" style={styles.count}>
+            {providers.length} providers
+          </Text>
+          {/* Decorative only — real client-side sort is deferred (Open Decision #4, m14-ux-spec.md). */}
+          <View testID="sort-control" style={styles.sortPill}>
+            <Text style={styles.sortLabel}>Sort: Best match</Text>
+          </View>
+        </View>
       </View>
-      <TraceLink onViewTrace={onViewTrace} />
 
       {providers.map((provider, index) => {
         const { candidate } = provider;
@@ -101,6 +113,8 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
           </Pressable>
         );
       })}
+
+      <TraceLink onViewTrace={onViewTrace} />
     </ScrollView>
   );
 }
@@ -109,11 +123,41 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  sortRow: {
+  header: {
     padding: 12,
+    gap: 2,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  count: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  sortPill: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
   sortLabel: {
+    fontSize: 12,
     fontWeight: "600",
+    color: "#6b7280",
   },
   emptyState: {
     padding: 24,

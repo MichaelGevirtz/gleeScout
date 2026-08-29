@@ -377,6 +377,34 @@ describe("recommendations -> trace -> back", () => {
 });
 
 describe("chat pill", () => {
+  it("is absent during the transitionLoading (provider search) screen", async () => {
+    const sendMessage = mockSession();
+    sendMessage.mockResolvedValueOnce(readyState);
+    let resolveProviders: (value: { providers: ProviderScore[] }) => void = () => {};
+    mockedFetchProviders.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveProviders = resolve;
+      }),
+    );
+
+    await render(<App />);
+    await fireEvent.changeText(screen.getByTestId("chat-input"), "Saturday");
+    await fireEvent.press(screen.getByTestId("chat-send"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("step-searching")).toBeTruthy();
+    expect(screen.queryByTestId("chat-pill")).toBeNull();
+
+    await act(async () => {
+      resolveProviders({ providers: [providerScoreFixture("https://a.com", "A")] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  });
+
   it("is absent on Chat, present elsewhere, and returns to Chat preserving providers", async () => {
     const provider = await (async () => {
       const sendMessage = mockSession();

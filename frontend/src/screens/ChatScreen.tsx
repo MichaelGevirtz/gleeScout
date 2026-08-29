@@ -153,19 +153,21 @@ export function ChatScreen({ state, onSend }: ChatScreenProps) {
         )}
       </ScrollView>
 
-      <View testID="chat-chip-bar" style={styles.chipBar}>
-        <Text style={styles.chipBarLabel}>What I know so far</Text>
-        <View testID="chip-count" style={styles.chipCountBadge}>
-          <Text style={styles.chipCountText}>{knownFields.length}</Text>
+      {knownFields.length > 0 && (
+        <View testID="chat-chip-bar" style={styles.chipBar}>
+          <Text style={styles.chipBarLabel}>What I know so far</Text>
+          <View testID="chip-count" style={styles.chipCountBadge}>
+            <Text style={styles.chipCountText}>{knownFields.length}</Text>
+          </View>
+          <View style={styles.chipRow}>
+            {knownFields.map((field) => (
+              <View key={field.key} testID={`chip-${field.key}`} style={styles.miniChip}>
+                <Text style={styles.miniChipText}>{field.value}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-        <View style={styles.chipRow}>
-          {knownFields.map((field) => (
-            <View key={field.key} testID={`chip-${field.key}`} style={styles.miniChip}>
-              <Text style={styles.miniChipText}>{field.value}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      )}
 
       <View style={styles.inputRow}>
         <TextInput

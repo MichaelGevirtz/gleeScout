@@ -126,10 +126,11 @@ describe("ChatScreen chip bar", () => {
     expect(screen.getByTestId("chip-count")).toHaveTextContent("3");
   });
 
-  it("renders zero chips and a 0 badge for a state with nothing known yet", async () => {
+  it("hides the chip bar entirely for a state with nothing known yet", async () => {
     await render(<ChatScreen state={baseState()} onSend={jest.fn()} />);
 
-    expect(screen.getByTestId("chip-count")).toHaveTextContent("0");
+    expect(screen.queryByTestId("chat-chip-bar")).toBeNull();
+    expect(screen.queryByTestId("chip-count")).toBeNull();
     expect(screen.queryByTestId("chip-serviceCategory")).toBeNull();
     expect(screen.queryByTestId("chip-dateTime")).toBeNull();
     expect(screen.queryByTestId("chip-location")).toBeNull();

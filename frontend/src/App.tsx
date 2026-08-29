@@ -231,7 +231,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {screen !== "chat" && (
+      {screen !== "chat" && screen !== "transitionLoading" && (
         <Pressable testID="chat-pill" onPress={handleOpenChat} style={styles.chatPill}>
           <Text style={styles.chatPillText}>💬 Chat</Text>
         </Pressable>

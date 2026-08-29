@@ -29,7 +29,7 @@ interaction until the app is ready to search.
 
 **Renders from `state`**:
 - `state.messages: {role: "user"|"assistant", content: string}[]` → the transcript, in order. The assistant's phrased next-question already comes back as the last `assistant` message — the client never composes question text itself.
-- `state.serviceCategory`, `state.coreAttributes.{dateTime,location}`, `state.categoryAttributes: Record<name, {description, importance, value}>` → source for the "What I know so far" chip bar/sheet. A chip is shown for every field that is non-null/non-undefined; count badge = number of such fields. This bar is read-only in this frozen baseline (see Open Decisions #3).
+- `state.serviceCategory`, `state.coreAttributes.{dateTime,location}`, `state.categoryAttributes: Record<name, {description, importance, value}>` → source for the "What I know so far" chip bar/sheet. A chip is shown for every field that is non-null/non-undefined; count badge = number of such fields. The whole bar is hidden when zero fields are known (e.g. on first load, before any answer) — an empty "What I know so far · 0" bar has no information value and just wastes vertical space. This bar is read-only in this frozen baseline (see Open Decisions #3).
 - The "recap chips inside the assistant's bubble" (e.g. Bounce house / Austin, TX / ~30 kids / Outdoor shown together after the first rich message) are a **client-side rendering choice**, not literal message content — derive them the same way as the chip bar (diff of newly-non-null fields since the previous state), don't expect the backend to hand back a pre-formatted recap string.
 
 **Transition out**: when `state.phase === "ready_for_search"`, move to the Transition screen and immediately call `POST /providers`.
@@ -285,10 +285,14 @@ Purely derived from data the app already has — nothing new to fetch:
   ?? hostname(candidate.url)}`" line, derived from the already-held
   `selectedCandidate` local variable — not new state, just a new place
   to surface something already tracked.
-- One button: **"Chat"** (when `screen !== "chat"`) / **"Back to
-  matches"** (when `screen === "chat"`). Clicking it only ever sets
-  `screen` — the same transition D18 already performs for
-  reopening chat / returning to the list; no new transition logic.
+- One button: **"Back to chat"** (when `screen !== "chat"`) / **"Back
+  to matches"** (when `screen === "chat"`) — the explicit "Back to"
+  wording on both states makes clear pressing it returns you
+  somewhere, not that it opens something new. Styled as a light
+  accent (not solid black) to de-emphasize it relative to the primary
+  content. Clicking it only ever sets `screen` — the same transition
+  D18 already performs for reopening chat / returning to the list; no
+  new transition logic.
 
 The panel never disappears once shown, regardless of which right-pane
 screen is active — that's what makes context "always visible" rather

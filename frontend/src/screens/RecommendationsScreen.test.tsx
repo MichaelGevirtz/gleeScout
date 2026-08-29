@@ -182,6 +182,34 @@ describe("RecommendationsScreen", () => {
     expect(onSelectRow.mock.calls[0][0]).toBe(providers[1]);
   });
 
+  it("renders the personalized heading, subtitle, and provider count above the list", async () => {
+    const providers = [makeProvider(), makeProvider(), makeProvider()];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("recommendations-heading")).toHaveTextContent("Your best matches");
+    expect(screen.getByTestId("recommendations-subtitle")).toHaveTextContent("Based on your requirements");
+    expect(screen.getByTestId("recommendations-count")).toHaveTextContent("3 providers");
+  });
+
+  it("omits the heading block when providers is empty", async () => {
+    await render(<RecommendationsScreen providers={[]} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.queryByTestId("recommendations-header")).toBeNull();
+  });
+
+  it("renders the trace link after the provider list, not before it", async () => {
+    const providers = [makeProvider(), makeProvider()];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    const serialized = JSON.stringify(screen.toJSON());
+    const lastRowIndex = serialized.indexOf('"provider-row-1"');
+    const traceLinkIndex = serialized.indexOf('"view-trace-link"');
+    const headingIndex = serialized.indexOf('"recommendations-header"');
+
+    expect(headingIndex).toBeLessThan(lastRowIndex);
+    expect(traceLinkIndex).toBeGreaterThan(lastRowIndex);
+  });
+
   it("renders an empty-state message and no rows when providers is empty", async () => {
     const onSelectRow = jest.fn();
     await render(
