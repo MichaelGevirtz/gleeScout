@@ -11,8 +11,9 @@ export interface ProviderDetailsScreenProps {
   onSelectProvider: (candidate: ProviderCandidate) => void;
 }
 
-// Static copy — per design/m14-ux-spec.md screen 4, this caption is shown
-// once, always, regardless of `inferred` content (never conditional).
+// Static copy — per design/m14-ux-spec.md screen 4, shown once whenever the
+// section renders (i.e. whenever `inferred` is non-empty); the whole section
+// is omitted when there's nothing to disclaim.
 const INFERRED_CAPTION = "Inferred from review patterns — not confirmed by the provider.";
 
 // Friendly labels for Inferred<T>.sourceType. "provider_website" -> "provider
@@ -265,29 +266,31 @@ export default function ProviderDetailsScreen({
             </View>
           </View>
 
-          <View testID="inferred-section">
-            <SectionHeading icon="inferred" label="Inferred from reviews" />
-            <Text testID="inferred-caption" style={styles.inferredCaption}>
-              {INFERRED_CAPTION}
-            </Text>
-            <View testID="inferred-list">
-              {inferredList.map((item, index) => (
-                <View key={index} testID={`inferred-card-${index}`} style={styles.inferredCard}>
-                  <Text testID={`inferred-card-${index}-value`} style={styles.inferredValue}>
-                    {item.value}
-                  </Text>
-                  {item.evidenceExcerpt ? (
-                    <Text testID={`inferred-card-${index}-excerpt`} style={styles.inferredExcerpt}>
-                      &ldquo;{item.evidenceExcerpt}&rdquo;
+          {inferredList.length > 0 ? (
+            <View testID="inferred-section">
+              <SectionHeading icon="inferred" label="Inferred from reviews" />
+              <Text testID="inferred-caption" style={styles.inferredCaption}>
+                {INFERRED_CAPTION}
+              </Text>
+              <View testID="inferred-list">
+                {inferredList.map((item, index) => (
+                  <View key={index} testID={`inferred-card-${index}`} style={styles.inferredCard}>
+                    <Text testID={`inferred-card-${index}-value`} style={styles.inferredValue}>
+                      {item.value}
                     </Text>
-                  ) : null}
-                  <Text testID={`inferred-card-${index}-source-type`} style={styles.inferredSourceType}>
-                    {SOURCE_TYPE_LABELS[item.sourceType] ?? item.sourceType}
-                  </Text>
-                </View>
-              ))}
+                    {item.evidenceExcerpt ? (
+                      <Text testID={`inferred-card-${index}-excerpt`} style={styles.inferredExcerpt}>
+                        &ldquo;{item.evidenceExcerpt}&rdquo;
+                      </Text>
+                    ) : null}
+                    <Text testID={`inferred-card-${index}-source-type`} style={styles.inferredSourceType}>
+                      {SOURCE_TYPE_LABELS[item.sourceType] ?? item.sourceType}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
+          ) : null}
         </View>
       </ScrollView>
 

@@ -240,7 +240,7 @@ describe("ProviderDetailsScreen — inferred from reviews", () => {
     );
   });
 
-  it("renders the fixed caption exactly once, even with an empty inferred array", async () => {
+  it("omits the entire section, including the caption, when inferred is an empty array", async () => {
     const candidateWithNoInferred: ProviderCandidate = {
       ...fullCandidate,
       inferred: [],
@@ -250,11 +250,22 @@ describe("ProviderDetailsScreen — inferred from reviews", () => {
       <ProviderDetailsScreen candidate={candidateWithNoInferred} matchGrade="good" onSelectProvider={noop} />,
     );
 
-    const captions = screen.getAllByText(
-      "Inferred from review patterns — not confirmed by the provider.",
-    );
-    expect(captions).toHaveLength(1);
+    expect(screen.queryByTestId("inferred-section")).toBeNull();
+    expect(
+      screen.queryByText("Inferred from review patterns — not confirmed by the provider."),
+    ).toBeNull();
     expect(screen.queryAllByTestId(/^inferred-card-/)).toHaveLength(0);
+  });
+
+  it("omits the entire section when inferred is absent", async () => {
+    const { inferred: _inferred, ...rest } = fullCandidate;
+    const candidateWithoutInferred = rest as ProviderCandidate;
+
+    await render(
+      <ProviderDetailsScreen candidate={candidateWithoutInferred} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    expect(screen.queryByTestId("inferred-section")).toBeNull();
   });
 });
 
