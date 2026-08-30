@@ -3,24 +3,53 @@ import { createInitialState, type ConversationState } from "../domain/conversati
 import { isReadyForSearch, selectNextMissingAttribute } from "./questionPolicy.js";
 
 describe("selectNextMissingAttribute", () => {
-  it("returns the core dateTime target when both core attributes are unset and no category attributes exist yet", () => {
+  it("returns the core serviceCategory target when nothing is known yet", () => {
     const state = createInitialState("s1");
+
+    expect(selectNextMissingAttribute(state)).toEqual({ kind: "core", field: "serviceCategory" });
+  });
+
+  it("prioritizes serviceCategory over dateTime when both are unknown", () => {
+    const state: ConversationState = {
+      ...createInitialState("s1"),
+      coreAttributes: {},
+    };
+
+    expect(selectNextMissingAttribute(state)).toEqual({ kind: "core", field: "serviceCategory" });
+  });
+
+  it("returns the serviceCategory target even when dateTime/location are already known (the isReadyForSearch/selectNextMissingAttribute sync gap, task-96)", () => {
+    const state: ConversationState = {
+      ...createInitialState("s1"),
+      coreAttributes: { dateTime: "next Saturday", location: "Austin, TX" },
+    };
+
+    expect(selectNextMissingAttribute(state)).toEqual({ kind: "core", field: "serviceCategory" });
+  });
+
+  it("returns the core dateTime target once serviceCategory is known but dateTime/location aren't", () => {
+    const state: ConversationState = {
+      ...createInitialState("s1"),
+      serviceCategory: "bounce house rental",
+    };
 
     expect(selectNextMissingAttribute(state)).toEqual({ kind: "core", field: "dateTime" });
   });
 
-  it("returns the core location target once dateTime is known but location isn't", () => {
+  it("returns the core location target once serviceCategory and dateTime are known but location isn't", () => {
     const state: ConversationState = {
       ...createInitialState("s1"),
+      serviceCategory: "bounce house rental",
       coreAttributes: { dateTime: "next Saturday" },
     };
 
     expect(selectNextMissingAttribute(state)).toEqual({ kind: "core", field: "location" });
   });
 
-  it("returns a missing required category attribute once both core attributes are known", () => {
+  it("returns a missing required category attribute once serviceCategory and both core attributes are known", () => {
     const state: ConversationState = {
       ...createInitialState("s1"),
+      serviceCategory: "bounce house rental",
       coreAttributes: { dateTime: "next Saturday", location: "Austin, TX" },
       categoryAttributes: {
         budget: { description: "the party budget", importance: "required", value: null },
@@ -38,6 +67,7 @@ describe("selectNextMissingAttribute", () => {
   it("never returns a missing optional category attribute, even when it's the only thing missing", () => {
     const state: ConversationState = {
       ...createInitialState("s1"),
+      serviceCategory: "bounce house rental",
       coreAttributes: { dateTime: "next Saturday", location: "Austin, TX" },
       categoryAttributes: {
         waterSlide: { description: "whether a water slide is wanted", importance: "optional", value: null },
@@ -47,9 +77,10 @@ describe("selectNextMissingAttribute", () => {
     expect(selectNextMissingAttribute(state)).toBeNull();
   });
 
-  it("returns null once core attributes and all required category attributes are known, regardless of missing optional ones", () => {
+  it("returns null once serviceCategory, core attributes, and all required category attributes are known, regardless of missing optional ones", () => {
     const state: ConversationState = {
       ...createInitialState("s1"),
+      serviceCategory: "bounce house rental",
       coreAttributes: { dateTime: "next Saturday", location: "Austin, TX" },
       categoryAttributes: {
         budget: { description: "the party budget", importance: "required", value: "$500" },

@@ -21,6 +21,9 @@ Rules:
 
 function describeTarget(target: MissingAttributeTarget): string {
   if (target.kind === "core") {
+    if (target.field === "serviceCategory") {
+      return "The type of service being requested is not yet known.";
+    }
     return target.field === "dateTime"
       ? "The event's date/time is not yet known."
       : "The event's location is not yet known.";

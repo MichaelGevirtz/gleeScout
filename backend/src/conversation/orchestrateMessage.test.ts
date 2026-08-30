@@ -56,12 +56,32 @@ describe("orchestrateMessage", () => {
     await orchestrateMessage({
       state,
       message: "I need a bounce house",
-      extract: fakeExtract(emptyExtraction()),
+      extract: fakeExtract(emptyExtraction({ serviceCategory: "bounce house rental" })),
       phrase,
     });
 
     expect(capturedTarget).toEqual({ kind: "core", field: "dateTime" });
     expect(capturedState?.messages).toEqual([{ role: "user", content: "I need a bounce house" }]);
+  });
+
+  it("asks about the service instead of throwing when date/location are known but serviceCategory never was (task-96 regression, reproduces the live 'plan something... Saturday' / 'texas' crash)", async () => {
+    const state: ConversationState = {
+      ...createInitialState("s1"),
+      coreAttributes: { dateTime: "Saturday" },
+    };
+
+    const result = await orchestrateMessage({
+      state,
+      message: "texas",
+      extract: fakeExtract(emptyExtraction({ coreAttributes: { dateTime: null, location: "texas" } })),
+      phrase: fakePhrase("What kind of service are you looking for?"),
+    });
+
+    expect(result.messages.at(-1)).toEqual({
+      role: "assistant",
+      content: "What kind of service are you looking for?",
+    });
+    expect(result.phase).toBe("gathering");
   });
 
   it("transitions phase to ready_for_search and does not call phrase when the merge produces a complete state", async () => {

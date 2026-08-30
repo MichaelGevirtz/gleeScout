@@ -44,6 +44,21 @@ describe("generatePendingQuestion", () => {
     expect(capturedPrompt).toContain("the party budget");
   });
 
+  it("describes the serviceCategory target, not date or location, when that's what's missing", async () => {
+    let capturedPrompt = "";
+    const target: MissingAttributeTarget = { kind: "core", field: "serviceCategory" };
+    const generate: GeneratePendingQuestionFn = async ({ prompt }) => {
+      capturedPrompt = prompt;
+      return { question: "What kind of service are you looking for?" };
+    };
+
+    await generatePendingQuestion({ target, state: createInitialState("s1"), generate });
+
+    expect(capturedPrompt).toContain("type of service");
+    expect(capturedPrompt).not.toContain("date/time is not yet known");
+    expect(capturedPrompt).not.toContain("location is not yet known");
+  });
+
   it("includes already-known state in the prompt for context-aware phrasing", async () => {
     let capturedPrompt = "";
     const target: MissingAttributeTarget = { kind: "core", field: "location" };

@@ -415,6 +415,15 @@ committed.
 **Status**: PROJECT DESIGN DECISION (bug fix + explicit reviewer
 tradeoff), confirmed 2026-08-28, implemented in task-41.
 
+**Closed (2026-08-30, task-97)**: the "accepted consequence, not fixed
+here" gap above is resolved — `selectNextMissingAttribute` now also
+checks `serviceCategory` (first, ahead of `dateTime`/`location`), so
+`orchestrateMessage.ts`'s invariant throw is provably unreachable
+rather than merely rare. Live-reproduced and re-verified fixed in the
+same session it was found in (session `9d9daf87-...`'s "plan
+something... Saturday" / "texas" sequence, previously a 500). See
+`tasks/completed/task-97-question-policy-service-category-gap.md`.
+
 **Addendum 2 (2026-08-28, task-42) — `location` gets the same
 treatment, `dateTime` deliberately does not.**
 **Finding**: the same class of gap existed for

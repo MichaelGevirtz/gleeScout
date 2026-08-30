@@ -1875,6 +1875,36 @@
   asserted the caption always renders, and the spec line it was based
   on. `npm test` (frontend): 170/170 passing; `tsc --noEmit`: clean.
 
+- **Task 97 — selectNextMissingAttribute recognizes a missing
+  serviceCategory** (DONE, see
+  `tasks/completed/task-97-question-policy-service-category-gap.md`):
+  bug fix within already-approved M4 scope, live-reproduced this
+  session as an unhandled 500 ("Can you help me plan something for my
+  event on Saturday?" → "texas" → "Unexpected server error").
+  `isReadyForSearch` has required `serviceCategory` since task-41, but
+  `selectNextMissingAttribute` (which picks the next question to ask)
+  never checked it — so a conversation with date+location known but no
+  identified service hit `orchestrateMessage.ts`'s invariant guard
+  instead of asking a sensible question. Added `"serviceCategory"` to
+  `MissingAttributeTarget`'s core field union in
+  `backend/src/conversation/questionPolicy.ts`, checked **first**
+  (ahead of `dateTime`/`location`) — matches Part 1's own step order
+  and independently prevents the crash, since a vague opener now asks
+  "what service?" before "where?"/"when?". Added a matching branch to
+  `backend/src/llm/questionPhrasing.ts`'s `describeTarget` — reuses the
+  existing LLM-phrasing pipeline, no new response shape or hardcoded
+  fallback string. `isReadyForSearch`/`orchestrateMessage.ts` left
+  untouched; the fix makes the latter's existing invariant throw
+  provably unreachable rather than removing it. 5 new tests across
+  `questionPolicy.test.ts`/`questionPhrasing.test.ts`/
+  `orchestrateMessage.test.ts` (including a full regression of the live
+  crash sequence). `backend/npm test`: 43 files / 409 tests passing.
+  `backend/npm run typecheck`: clean. Live-validated by replaying the
+  exact crashing sequence against the running dev server — turn 1 now
+  asks about service before location; turn 2 (previously a 500) now
+  asks a context-aware follow-up instead of crashing. `decisions.md`'s
+  D5 task-41 addendum updated with a closure note.
+
 ## Blocked Work
 
 - None.

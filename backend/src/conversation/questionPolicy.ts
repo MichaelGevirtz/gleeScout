@@ -1,12 +1,15 @@
 import type { ConversationState } from "../domain/conversation.js";
 
 export type MissingAttributeTarget =
-  | { kind: "core"; field: "dateTime" | "location" }
+  | { kind: "core"; field: "serviceCategory" | "dateTime" | "location" }
   | { kind: "category"; name: string; description: string; importance: "required" };
 
 const MAX_GATHERING_TURNS = 8;
 
 export function selectNextMissingAttribute(state: ConversationState): MissingAttributeTarget | null {
+  if (state.serviceCategory === null) {
+    return { kind: "core", field: "serviceCategory" };
+  }
   if (!state.coreAttributes.dateTime) {
     return { kind: "core", field: "dateTime" };
   }
