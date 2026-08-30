@@ -8,6 +8,8 @@ export interface GoldenCase {
   expectCategoryNullable?: boolean;
   /** Case-insensitive substrings checked against category attribute name+description. Missing ones are a REVIEW, not a FAIL. */
   expectAttributeKeywords?: string[];
+  /** Case-insensitive substrings that must NOT appear in any category attribute name+description. A match is a FAIL. */
+  expectNoAttributeKeywords?: string[];
   /** Whether coreAttributes.dateTime should be non-null after all turns. */
   expectDateTimePresent?: boolean;
   /** Whether coreAttributes.location should be non-null after all turns. */
@@ -104,5 +106,17 @@ export const goldenSet: GoldenCase[] = [
     expectDateTimePresent: false,
     expectLocationPresent: false,
     note: "Nothing else was stated. Any non-null date/location here would be a hallucination.",
+  },
+  {
+    name: "event context should not become an attribute",
+    turns: [
+      "I need a bounce house for my son's birthday party next Saturday in Denver, CO.",
+    ],
+    expectCategoryKeywords: ["bounce house", "inflatable"],
+    expectAttributeKeywords: ["water", "slide"],
+    expectNoAttributeKeywords: ["occasion", "birthday", "guest of honor", "son's"],
+    expectDateTimePresent: true,
+    expectLocationPresent: true,
+    note: "Regression guard for task-94: the message states an explicit occasion, but categoryAttributes must only contain provider-statable facts, never event-context/occasion fields.",
   },
 ];

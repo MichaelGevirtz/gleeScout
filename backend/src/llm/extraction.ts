@@ -30,6 +30,7 @@ Given the conversation's current known state and the user's latest message, resp
 Rules:
 - "serviceCategory": the type of service being requested (e.g. "bounce house rental", "wedding photographer"). Use null only if it is genuinely unclear from the whole conversation so far.
 - "categoryAttributes" must list every attribute that matters for this service category, not just ones mentioned in this message. If the known state already lists category attributes, reuse the same "name" and "description" for those you keep, and add any new ones this message reveals are relevant.
+- Every categoryAttribute must be something a provider's own website or listing would state as a fact about their service (e.g. capacity, delivery radius, setup included, water slide option). Never propose an attribute describing the customer's event context, purpose, occasion, or who the event is for (e.g. occasion, relationship to guest of honor) — a provider's listing cannot state facts about the customer's event.
 - For every field's "value" (coreAttributes.dateTime, coreAttributes.location, and each categoryAttributes[].value): only set it if the CURRENT message states or changes that value. If the current message does not mention it, return null even if the known state already has a value for it — do not copy known-state values forward. A separate step reconciles this output with existing state.`;
 
 function formatKnownState(state: ConversationState): string {

@@ -55,6 +55,18 @@ function evaluateCase(state: ConversationState, testCase: GoldenCase): { verdict
     }
   }
 
+  if (testCase.expectNoAttributeKeywords && testCase.expectNoAttributeKeywords.length > 0) {
+    const haystacks = Object.entries(state.categoryAttributes).map(
+      ([name, slot]) => `${name} ${slot.description}`.toLowerCase()
+    );
+    const present = testCase.expectNoAttributeKeywords.filter((k) =>
+      haystacks.some((h) => h.includes(k.toLowerCase()))
+    );
+    if (present.length > 0) {
+      fails.push(`category attribute matched disallowed keyword(s): ${present.join(", ")}`);
+    }
+  }
+
   if (testCase.expectDateTimePresent !== undefined) {
     const present = state.coreAttributes.dateTime !== undefined && state.coreAttributes.dateTime !== null;
     if (present !== testCase.expectDateTimePresent) {
