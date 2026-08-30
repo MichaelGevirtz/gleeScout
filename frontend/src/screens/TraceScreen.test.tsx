@@ -102,6 +102,48 @@ describe("TraceScreen", () => {
     expect(gradeLine).toHaveTextContent(/fitScore: —/);
   });
 
+  it("renders an Excluded subsection with each provider and reason when the rank step has excluded candidates", async () => {
+    const event: TraceEvent = {
+      step: "rank",
+      summary: "Ranked providers",
+      detail: {
+        scores: [],
+        excludedCount: 2,
+        excluded: [
+          {
+            provider: "b.example",
+            reason: "no confirmed requirement match",
+            unmatched: [
+              { label: "bounce house rental", kind: "serviceCategory" },
+              { label: "New York, NY", kind: "location" },
+            ],
+          },
+          { provider: "c.example", reason: "outside top 5 by score", unmatched: [] },
+        ],
+      },
+      timestamp: "2026-08-29T00:00:01.000Z",
+    };
+
+    await render(<TraceScreen events={[event]} onBack={jest.fn()} />);
+
+    expect(screen.getByTestId("trace-excluded-0")).toHaveTextContent(
+      "b.example — no confirmed requirement match",
+    );
+    expect(screen.getByTestId("trace-excluded-0-unmatched")).toHaveTextContent(
+      "Checked: bounce house rental, New York, NY",
+    );
+    expect(screen.getByTestId("trace-excluded-1")).toHaveTextContent(
+      "c.example — outside top 5 by score",
+    );
+    expect(screen.queryByTestId("trace-excluded-1-unmatched")).toBeNull();
+  });
+
+  it("renders no Excluded subsection for a rank step with zero excluded candidates", async () => {
+    await render(<TraceScreen events={[rankEvent()]} onBack={jest.fn()} />);
+
+    expect(screen.queryByTestId("trace-excluded")).toBeNull();
+  });
+
   it("renders each phrased question for a prepareQuestions step", async () => {
     const event: TraceEvent = {
       step: "prepareQuestions",

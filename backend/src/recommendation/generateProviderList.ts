@@ -2,6 +2,7 @@ import { buildProviderSearchQuery } from "../research/searchQuery.js";
 import { discoverProviderCandidates } from "../research/discoverProviderCandidates.js";
 import { enrichProviderCandidates } from "../research/enrichProviderCandidates.js";
 import { rankProviders } from "../ranking/rankProviders.js";
+import { deriveConfirmedRequirements, deriveRequirementCatalog } from "../ranking/confirmedRequirements.js";
 import { deriveRankingRequirements } from "../ranking/types.js";
 import { computeMockReputation } from "./mockReputationSignals.js";
 import type { ConversationState } from "../domain/conversation.js";
@@ -68,8 +69,26 @@ export async function generateProviderList({
   const enriched = await enrich({ candidates: discovered });
   const enrichEndedAt = Date.now();
 
-  const ranked = rank({ candidates: enriched, requirements: deriveRankingRequirements(state) });
+  const requirements = deriveRankingRequirements(state);
+  const ranked = rank({ candidates: enriched, requirements });
   const rankEndedAt = Date.now();
+
+  // Diffed against `rank`'s own input/output rather than assumed from
+  // rankProviders' internals — `rank` is injectable (see
+  // generateProviderList.test.ts), so this must work generically for
+  // any RankFn, not just the real implementation.
+  const rankedUrls = new Set(ranked.map((p) => p.candidate.url));
+  const requirementCatalog = deriveRequirementCatalog(requirements);
+  const excluded = enriched
+    .filter((c) => !rankedUrls.has(c.url))
+    .map((c) => {
+      const isZeroMatch = deriveConfirmedRequirements(c, requirements).length === 0;
+      return {
+        provider: candidateLabel(c),
+        reason: isZeroMatch ? "no confirmed requirement match" : "outside top 5 by score",
+        unmatched: isZeroMatch ? requirementCatalog : [],
+      };
+    });
 
   // Blended reputation is attached strictly after ranking so it can
   // never influence score/fitScore/matchGrade/order.
@@ -114,6 +133,8 @@ export async function generateProviderList({
           matchGrade: p.matchGrade,
           explanation: p.explanation,
         })),
+        excludedCount: excluded.length,
+        excluded,
       },
       timestamp: new Date(rankEndedAt).toISOString(),
       durationMs: rankEndedAt - enrichEndedAt,

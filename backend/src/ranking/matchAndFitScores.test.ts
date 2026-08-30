@@ -27,8 +27,12 @@ function slot(value: string | null, importance: "required" | "optional" = "requi
   return { description: "test attribute", importance, value };
 }
 
-function requirements(categoryAttributes: Record<string, CategoryAttributeSlot>, location?: string): RankingRequirements {
-  return { location, categoryAttributes };
+function requirements(
+  categoryAttributes: Record<string, CategoryAttributeSlot>,
+  location?: string,
+  serviceCategory?: string,
+): RankingRequirements {
+  return { location, serviceCategory, categoryAttributes };
 }
 
 describe("requirementMatchScore", () => {
@@ -79,6 +83,24 @@ describe("requirementMatchScore", () => {
   it("checks policies when servicesOffered is absent", () => {
     const c = candidate({ policies: fact("no outdoor pets allowed") });
     const r = requirements({ theme: slot("outdoor") });
+    expect(requirementMatchScore(c, r)).toBe(1);
+  });
+
+  it("credits a matched serviceCategory even with empty categoryAttributes", () => {
+    const c = candidate({ servicesOffered: fact(["Bounce Houses & Jumps"]) });
+    const r = requirements({}, undefined, "bounce house rental");
+    expect(requirementMatchScore(c, r)).toBe(1);
+  });
+
+  it("returns 0 for an unmatched serviceCategory alongside a matched categoryAttribute (blended score)", () => {
+    const c = candidate({ servicesOffered: fact(["large tents"]) });
+    const r = requirements({ size: slot("large") }, undefined, "clowns");
+    expect(requirementMatchScore(c, r)).toBe(0.5);
+  });
+
+  it("evaluates serviceCategory via name alone (no servicesOffered/policies) instead of returning null", () => {
+    const c = candidate({ name: fact("Austin Bounce House Rentals") });
+    const r = requirements({}, undefined, "bounce house rental");
     expect(requirementMatchScore(c, r)).toBe(1);
   });
 });

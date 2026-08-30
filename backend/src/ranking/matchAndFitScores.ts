@@ -1,5 +1,6 @@
 import type { CategoryAttributeSlot } from "../domain/conversation.js";
 import type { ProviderCandidate } from "../domain/provider.js";
+import { serviceCategoryMatches } from "./confirmedRequirements.js";
 import type { RankingRequirements } from "./types.js";
 
 function findBudgetAttribute(
@@ -25,7 +26,11 @@ export function requirementMatchScore(
 ): number | null {
   const servicesText = candidate.fields.servicesOffered?.value.join(" ") ?? "";
   const policiesText = candidate.fields.policies?.value ?? "";
-  if (!candidate.fields.servicesOffered && !candidate.fields.policies) {
+  // serviceCategory can also match via `name` (see confirmedRequirements.ts's
+  // factText), so the "no evidence at all" guard now also accepts a
+  // candidate with only a `name` fact — otherwise a real serviceCategory
+  // match via name alone would be discarded before it's ever checked.
+  if (!candidate.fields.servicesOffered && !candidate.fields.policies && !candidate.fields.name) {
     return null;
   }
   const combinedText = `${servicesText} ${policiesText}`.toLowerCase();
@@ -37,15 +42,19 @@ export function requirementMatchScore(
     .filter(([key, slot]) => key !== budgetKey && slot.value !== null)
     .map(([, slot]) => slot.value as string);
 
-  if (valuesToCheck.length === 0) {
+  const checks = valuesToCheck.map((value) => combinedText.includes(value.toLowerCase()));
+
+  if (requirements.serviceCategory) {
+    checks.push(serviceCategoryMatches(candidate, requirements.serviceCategory));
+  }
+
+  if (checks.length === 0) {
     return null;
   }
 
-  const matchedCount = valuesToCheck.filter((value) =>
-    combinedText.includes(value.toLowerCase()),
-  ).length;
+  const matchedCount = checks.filter(Boolean).length;
 
-  return matchedCount / valuesToCheck.length;
+  return matchedCount / checks.length;
 }
 
 export function geoFitScore(

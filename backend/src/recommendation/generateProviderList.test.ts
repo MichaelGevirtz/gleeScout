@@ -201,10 +201,44 @@ describe("generateProviderList", () => {
           explanation: ranked[0]!.explanation,
         },
       ],
+      excludedCount: 2,
+      excluded: expect.arrayContaining([
+        { provider: "b.example", reason: "no confirmed requirement match", unmatched: [{ label: "bounce house rental", kind: "serviceCategory" }, { label: "Austin, TX", kind: "location" }] },
+        { provider: "c.example", reason: "no confirmed requirement match", unmatched: [{ label: "bounce house rental", kind: "serviceCategory" }, { label: "Austin, TX", kind: "location" }] },
+      ]),
     });
 
     const recommendEvent = trace.find((e) => e.step === "recommend");
     expect(recommendEvent?.detail).toEqual({ count: 1 });
+  });
+
+  it("reports unmatched: [] for a candidate excluded by the top-5 cap rather than a zero-match filter", async () => {
+    const kept = { ...candidate("https://a.example"), fields: { name: { value: "Austin Bounce House Rental", source: "a.example", sourceUrl: "https://a.example", retrievedAt: "2026-08-28T00:00:00.000Z" } } };
+    const droppedByCap = { ...candidate("https://b.example"), fields: { name: { value: "Austin Bounce House Rental", source: "b.example", sourceUrl: "https://b.example", retrievedAt: "2026-08-28T00:00:00.000Z" } } };
+    const enriched = [kept, droppedByCap];
+    const ranked: ProviderScore[] = [
+      {
+        candidate: kept,
+        score: 0.9,
+        dimensionScores: { requirementMatch: 1, geoFit: 1, priceFit: 1, reputation: null, evidenceQuality: 0.5 },
+        explanation: "test explanation",
+        fitScore: 1,
+        matchGrade: "wonderful",
+        confirmedRequirements: [{ label: "bounce house rental", kind: "serviceCategory" }],
+        otherFacts: [],
+      },
+    ];
+
+    const discover: DiscoverFn = async () => enriched;
+    const enrich: EnrichFn = async () => enriched;
+    const rank: RankFn = () => ranked;
+
+    const { trace } = await generateProviderList({ state: readyState(), discover, enrich, rank });
+
+    const rankEvent = trace.find((e) => e.step === "rank");
+    expect(rankEvent?.detail?.excluded).toEqual([
+      { provider: "Austin Bounce House Rental", reason: "outside top 5 by score", unmatched: [] },
+    ]);
   });
 
   it("gives each trace event real per-step timing instead of one shared timestamp", async () => {

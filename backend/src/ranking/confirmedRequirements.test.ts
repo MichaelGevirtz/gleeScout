@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveConfirmedRequirements } from "./confirmedRequirements.js";
+import { deriveConfirmedRequirements, deriveRequirementCatalog } from "./confirmedRequirements.js";
 import type { ProviderCandidate } from "../domain/provider.js";
 import type { RankingRequirements } from "./types.js";
 
@@ -24,6 +24,28 @@ describe("deriveConfirmedRequirements", () => {
     const result = deriveConfirmedRequirements(candidate, requirements);
 
     expect(result).toEqual([{ label: "baby shower photographer", kind: "serviceCategory" }]);
+  });
+
+  it("confirms serviceCategory with a generic suffix stripped (e.g. 'rental') against pluralized FACT text", () => {
+    const candidate = candidateWith({ servicesOffered: fact(["Bounce Houses & Jumps"]) });
+    const requirements: RankingRequirements = {
+      serviceCategory: "bounce house rental",
+      categoryAttributes: {},
+    };
+
+    const result = deriveConfirmedRequirements(candidate, requirements);
+
+    expect(result).toEqual([{ label: "bounce house rental", kind: "serviceCategory" }]);
+  });
+
+  it("still does not confirm a genuine mismatch after suffix stripping (accepted lexical gap)", () => {
+    const candidate = candidateWith({ servicesOffered: fact(["inflatables for backyard parties"]) });
+    const requirements: RankingRequirements = {
+      serviceCategory: "bounce house rental",
+      categoryAttributes: {},
+    };
+
+    expect(deriveConfirmedRequirements(candidate, requirements)).toEqual([]);
   });
 
   it("does not confirm serviceCategory when it's absent from FACT text", () => {
@@ -109,5 +131,50 @@ describe("deriveConfirmedRequirements", () => {
       { label: "Austin, TX", kind: "location" },
       { label: "baby shower", kind: "categoryAttribute" },
     ]);
+  });
+});
+
+describe("deriveRequirementCatalog", () => {
+  it("lists serviceCategory, location, and each non-null non-budget category attribute regardless of any candidate", () => {
+    const requirements: RankingRequirements = {
+      serviceCategory: "bounce house rental",
+      location: "Austin, TX",
+      categoryAttributes: {
+        ageRange: { description: "Age range", importance: "required", value: "toddler" },
+        budget: { description: "Budget", importance: "required", value: "$300" },
+        waterSlide: { description: "Water slide wanted", importance: "optional", value: null },
+      },
+    };
+
+    expect(deriveRequirementCatalog(requirements)).toEqual([
+      { label: "bounce house rental", kind: "serviceCategory" },
+      { label: "Austin, TX", kind: "location" },
+      { label: "toddler", kind: "categoryAttribute" },
+    ]);
+  });
+
+  it("returns an empty array when the requirements have no serviceCategory, location, or category attribute values", () => {
+    const requirements: RankingRequirements = { categoryAttributes: {} };
+
+    expect(deriveRequirementCatalog(requirements)).toEqual([]);
+  });
+
+  it("matches deriveConfirmedRequirements's full-confirmation labels/order for a candidate that confirms everything", () => {
+    const requirements: RankingRequirements = {
+      serviceCategory: "baby shower photographer",
+      location: "Austin, TX",
+      categoryAttributes: {
+        eventType: { description: "Event type", importance: "required", value: "baby shower" },
+      },
+    };
+    const candidate = candidateWith({
+      name: fact("Austin Baby Shower Photographer"),
+      location: fact("Austin, TX"),
+      servicesOffered: fact(["baby shower photography"]),
+    });
+
+    expect(deriveRequirementCatalog(requirements)).toEqual(
+      deriveConfirmedRequirements(candidate, requirements),
+    );
   });
 });

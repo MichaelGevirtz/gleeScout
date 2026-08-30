@@ -42,6 +42,12 @@ interface RankScore {
   explanation: string;
 }
 
+interface ExcludedCandidate {
+  provider: string;
+  reason: string;
+  unmatched: { label: string; kind: string }[];
+}
+
 function EventDetail({ event }: { event: TraceEvent }) {
   const detail = event.detail;
   if (!detail) {
@@ -66,6 +72,7 @@ function EventDetail({ event }: { event: TraceEvent }) {
       );
     case "rank": {
       const scores = (detail.scores as RankScore[] | undefined) ?? [];
+      const excluded = (detail.excluded as ExcludedCandidate[] | undefined) ?? [];
       return (
         <>
           {scores.map((s, i) => (
@@ -87,6 +94,23 @@ function EventDetail({ event }: { event: TraceEvent }) {
               ))}
             </View>
           ))}
+          {excluded.length > 0 && (
+            <View style={styles.excludedBlock} testID="trace-excluded">
+              <Text style={styles.excludedTitle}>Excluded</Text>
+              {excluded.map((e, i) => (
+                <View key={`${e.provider}-${i}`}>
+                  <Text testID={`trace-excluded-${i}`} style={styles.dimensionLine}>
+                    {e.provider} {EM_DASH} {e.reason}
+                  </Text>
+                  {e.unmatched.length > 0 && (
+                    <Text testID={`trace-excluded-${i}-unmatched`} style={styles.dimensionLine}>
+                      Checked: {e.unmatched.map((r) => r.label).join(", ")}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
         </>
       );
     }
@@ -228,5 +252,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#4b5563",
     marginLeft: 8,
+  },
+  excludedBlock: {
+    marginTop: 8,
+  },
+  excludedTitle: {
+    fontWeight: "600",
+    fontSize: 13,
+    color: "#374151",
   },
 });

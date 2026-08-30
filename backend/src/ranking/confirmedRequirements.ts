@@ -20,6 +20,53 @@ function factText(candidate: ProviderCandidate, includeName: boolean): string {
   return parts.join(" ").toLowerCase();
 }
 
+// Generic qualifiers a user's serviceCategory phrase often carries
+// that a provider's own FACT text frequently omits (e.g. "bounce
+// house rental" vs. a provider's "Bounce Houses & Jumps"). Stripped
+// from the trailing end of the phrase only, before the substring
+// check — never applied to categoryAttributes or FACT text itself.
+const GENERIC_CATEGORY_SUFFIXES = [
+  "rentals",
+  "rental",
+  "services",
+  "service",
+  "providers",
+  "provider",
+  "company",
+];
+
+function normalizeServiceCategory(category: string): string {
+  let normalized = category.toLowerCase().trim();
+  let strippedSomething = true;
+  while (strippedSomething) {
+    strippedSomething = false;
+    for (const suffix of GENERIC_CATEGORY_SUFFIXES) {
+      const withoutSuffix = normalized.replace(new RegExp(`\\s+${suffix}$`), "");
+      if (withoutSuffix !== normalized && withoutSuffix.length > 0) {
+        normalized = withoutSuffix;
+        strippedSomething = true;
+        break;
+      }
+    }
+  }
+  return normalized;
+}
+
+/**
+ * Single source of truth for "does this candidate's FACT text
+ * (name/servicesOffered/policies) confirm this serviceCategory
+ * phrase" — used by both `deriveConfirmedRequirements` (checklist)
+ * and `requirementMatchScore` (ranking dimension), so the two never
+ * drift apart.
+ */
+export function serviceCategoryMatches(
+  candidate: ProviderCandidate,
+  serviceCategory: string,
+): boolean {
+  const text = factText(candidate, true);
+  return text.includes(normalizeServiceCategory(serviceCategory));
+}
+
 function findBudgetKey(
   categoryAttributes: RankingRequirements["categoryAttributes"],
 ): string | undefined {
@@ -45,11 +92,8 @@ export function deriveConfirmedRequirements(
 ): ConfirmedRequirement[] {
   const confirmed: ConfirmedRequirement[] = [];
 
-  if (requirements.serviceCategory) {
-    const text = factText(candidate, true);
-    if (text.includes(requirements.serviceCategory.toLowerCase())) {
-      confirmed.push({ label: requirements.serviceCategory, kind: "serviceCategory" });
-    }
+  if (requirements.serviceCategory && serviceCategoryMatches(candidate, requirements.serviceCategory)) {
+    confirmed.push({ label: requirements.serviceCategory, kind: "serviceCategory" });
   }
 
   if (requirements.location && geoFitScore(candidate, requirements) === 1) {
@@ -66,4 +110,34 @@ export function deriveConfirmedRequirements(
   }
 
   return confirmed;
+}
+
+/**
+ * Every requirement the checks above consider, regardless of any
+ * candidate's text — i.e. the same three checks as
+ * `deriveConfirmedRequirements`, minus the "does this candidate's
+ * FACT text include it" step. Used by the trace (M13) to name which
+ * specific requirements a zero-confirmed-requirements candidate
+ * failed on: for such a candidate, every catalog entry here is by
+ * definition unmatched, since confirming even one would have kept it
+ * out of the zero-confirmed case.
+ */
+export function deriveRequirementCatalog(requirements: RankingRequirements): ConfirmedRequirement[] {
+  const catalog: ConfirmedRequirement[] = [];
+
+  if (requirements.serviceCategory) {
+    catalog.push({ label: requirements.serviceCategory, kind: "serviceCategory" });
+  }
+
+  if (requirements.location) {
+    catalog.push({ label: requirements.location, kind: "location" });
+  }
+
+  const budgetKey = findBudgetKey(requirements.categoryAttributes);
+  for (const [key, slot] of Object.entries(requirements.categoryAttributes)) {
+    if (key === budgetKey || slot.value === null) continue;
+    catalog.push({ label: slot.value, kind: "categoryAttribute" });
+  }
+
+  return catalog;
 }
