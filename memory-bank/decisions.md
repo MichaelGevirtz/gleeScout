@@ -2051,3 +2051,29 @@ in task-91.
   enhancement on top of already-satisfied scope, not a gap-filler, so
   it earns its own investigation-first task rather than being folded
   into M8 on an unverified assumption.
+
+## D30 — "Inferred from reviews" section now hidden when empty, reversing task-51's "always show the caption" rule (task-96)
+
+**Decision**: `ProviderDetailsScreen.tsx`'s entire `inferred-section`
+(heading, disclaimer caption, and card list) is now conditional on
+`inferredList.length > 0`, matching the existing pattern already used
+for `reputationLine`/`photosFact` in the same screen. Previously
+(task-51, recorded in `design/m14-ux-spec.md`) the heading + caption
+rendered unconditionally, with a dedicated test asserting the caption
+showed even with zero `inferred[]` entries.
+
+**Rationale**: User saw a real provider render an empty "Inferred from
+reviews" section (heading + disclaimer, no cards) and asked for it to
+be hidden entirely when there's no inferred data — flagged to the user
+as a reversal of a documented, tested decision (not an oversight)
+before implementing; confirmed as intentional. An empty disclaimer
+section with nothing to disclaim reads as broken/confusing rather than
+transparent.
+
+**Status**: Project decision, reversal confirmed by the reviewer in
+chat (2026-08-30). Superseding the "always show the caption" rule from
+task-51/D-era spec line in `design/m14-ux-spec.md` (now updated
+in-place, not kept as a separate historical note, since the old rule
+has no ongoing relevance).
+**Assignment alignment**: PROJECT DECISION (UI polish), not an
+explicit assignment requirement.

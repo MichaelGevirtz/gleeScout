@@ -1750,6 +1750,130 @@
   flagged limitation: literal substring matching won't dedup a
   paraphrased services entry against a confirmed requirement (see D29)
   — no semantic/LLM fallback added.
+- **Task 92 — Surface excluded candidates in the ranking trace step**
+  (DONE, see
+  `tasks/completed/task-92-trace-excluded-candidates.md`): the M13
+  debug/transparency trace previously logged only ranking survivors,
+  so a run where discovery found N candidates but ranking showed 1
+  gave no way to tell "the other N-1 were legitimately irrelevant"
+  apart from "a bug ate them" without reading source or attaching a
+  debugger. `backend/src/recommendation/generateProviderList.ts` now
+  diffs `enriched` (rank's input) against `ranked` (its output) by
+  URL — generically, since `RankFn` is injectable — and for each
+  excluded candidate re-derives `confirmedRequirements` via the
+  already-exported `deriveConfirmedRequirements` to classify the
+  reason as either "no confirmed requirement match" (dropped by
+  `rankProviders`'s hard filter) or "outside top 5 by score" (cap).
+  Adds `excludedCount`/`excluded: { provider, reason }[]` to the
+  `rank` trace event's `detail`. `rankProviders.ts`,
+  `confirmedRequirements.ts`, `types.ts`, and `domain/trace.ts`
+  (already a loose `Record<string, unknown>` detail schema) were
+  untouched — purely additive instrumentation, no ranking-logic or
+  contract changes. `frontend/src/screens/TraceScreen.tsx` renders an
+  "Excluded" subsection under Ranking, hidden when empty. `backend/npm
+  test`: 395/395. `backend/npm run typecheck`: clean. `frontend/npm
+  test`: 169/169. `frontend/npx tsc --noEmit`: clean. Known follow-up:
+  the "outside top 5 by score" reason branch is implemented and
+  type-correct but has no dedicated test fixture yet (both excluded
+  candidates in the current test hit the zero-confirmed-requirements
+  branch).
+- **Task 93 — Name the specific unmatched requirements for zero-match
+  trace exclusions** (DONE, see
+  `tasks/completed/task-93-trace-unmatched-requirement-detail.md`): a
+  follow-up to task-92 — the "no confirmed requirement match" reason
+  said *that* nothing matched but not *which* requirement(s)
+  (service category, location, a category attribute) a candidate
+  failed on. New `deriveRequirementCatalog(requirements)` export in
+  `backend/src/ranking/confirmedRequirements.ts` (sibling to
+  `deriveConfirmedRequirements`, which is unchanged) enumerates every
+  requirement the checks consider — serviceCategory, location, each
+  non-null non-budget category attribute — independent of any
+  candidate. Since a zero-confirmed-requirements candidate by
+  definition confirmed none of them, `generateProviderList.ts`
+  attaches the full catalog as `unmatched` on each such excluded
+  entry, and `[]` for the outside-top-5-by-score exclusion (that case
+  isn't about matching). Also added the dedicated top-5-cap trace
+  fixture that task-92 had logged as a missing test. `TraceScreen.tsx`
+  renders a "Checked: ..." line per excluded entry when `unmatched` is
+  non-empty. `rankProviders.ts` and `deriveConfirmedRequirements`'s
+  existing contract untouched. `backend/npm test`: 399/399.
+  `backend/npm run typecheck`: clean. `frontend/npm test`: 169/169.
+  `frontend/npx tsc --noEmit`: clean.
+- **Task 95 — serviceCategory match: suffix normalization + fold into
+  ranking** (DONE, see
+  `tasks/completed/task-95-servicecategory-match-consistency.md`): a
+  bug fix within already-approved M9 scope, found via live testing —
+  the confirmed-requirements checklist's `serviceCategory` substring
+  check was too strict (e.g. `"bounce house rental"` never matched FACT
+  text reading `"Bounce Houses & Jumps"`), and `requirementMatchScore`
+  (the actual ranking dimension backing Part 3's requirement-driven
+  ranking) ignored `serviceCategory` entirely, only ever checking
+  `categoryAttributes`. New exported `serviceCategoryMatches(candidate,
+  serviceCategory)` in `backend/src/ranking/confirmedRequirements.ts`
+  (next to `factText`) strips a fixed list of generic trailing words
+  ("rental(s)", "service(s)", "provider(s)", "company") from the
+  requirement phrase before the substring check, and is now the single
+  shared implementation used by both `deriveConfirmedRequirements` and
+  `requirementMatchScore` (`matchAndFitScores.ts`) — no duplicated
+  logic. `requirementMatchScore`'s "no evidence" null-guard was widened
+  to also accept a candidate with only a `name` fact (since
+  `serviceCategoryMatches` can match via `name` alone); the
+  categoryAttributes-matching logic itself was left untouched, per the
+  task's explicit scope limit. This makes `matchAndFitScores.ts` import
+  from `confirmedRequirements.ts`, which already imports `geoFitScore`
+  from `matchAndFitScores.ts` — confirmed safe (both cross-references
+  are hoisted function declarations, never called at module-evaluation
+  time) and verified clean under both `tsc` and vitest's ESM loader. 4
+  new unit tests (2 in `confirmedRequirements.test.ts` covering the
+  suffix-stripped match and a still-rejected genuine mismatch; 3 in
+  `matchAndFitScores.test.ts` covering a serviceCategory-alone match, a
+  blended serviceCategory+categoryAttribute score, and the name-only
+  null-guard case). `backend/npm test`: 43 files / 404 tests passing
+  (no regressions — `rankProviders.test.ts`'s fixture requirements have
+  no `serviceCategory`, so this task's new branch never fires there).
+  `backend/npm run typecheck`: clean. The task's live-backend success
+  criterion (re-running the session's exact query) was not
+  re-executed; the new unit tests cover the identical scenario that
+  motivated the fix.
+- **Task 94 — Extraction excludes event-context attributes from
+  categoryAttributes** (DONE, see
+  `tasks/completed/task-94-extraction-exclude-event-context-attributes.md`):
+  a bug fix within already-approved M3 scope, found via live testing —
+  the extraction system prompt had no constraint preventing the LLM
+  from proposing an event-context `categoryAttribute` (e.g. occasion/
+  "son's birthday"), which can structurally never be confirmed against
+  any provider's FACT text, silently zeroing the `requirementMatch`
+  ranking dimension for that query. Added one exclusion bullet to
+  `SYSTEM_INSTRUCTION` in `backend/src/llm/extraction.ts`:
+  `categoryAttributes` must be things a provider's own listing would
+  state as fact, never the customer's event context/purpose/occasion —
+  prompt wording only, no schema/merge/questionPolicy change (D5/D8:
+  LLM proposes, deterministic code decides structure). Added a new
+  `expectNoAttributeKeywords` field to `GoldenCase`
+  (`backend/scripts/extractionGoldenSet.ts` + `evalExtraction.ts`) and
+  one new golden case mirroring the live defect. `backend/npm test`:
+  43 files / 399 tests passing (no test changes needed —
+  `extraction.test.ts`'s assertions use injected fakes, not prompt
+  substrings). `backend/npm run typecheck`: clean. `npm run
+  eval:extraction` (real Gemini API, on-demand): 10/10 cases completed,
+  0 FAIL — the new regression case passed (no occasion/birthday/
+  guest-of-honor attribute proposed); 3 pre-existing cases landed
+  REVIEW on unrelated loose-keyword misses (same non-deterministic
+  softness already documented in task-08), not a regression from this
+  change.
+- **Task 96 — Hide "Inferred from reviews" section when there's no
+  inferred data** (DONE, see
+  `tasks/completed/task-96-hide-empty-inferred-section.md`): reverses
+  the task-51-era decision (recorded in `design/m14-ux-spec.md`) that
+  the section's heading + disclaimer caption should render
+  unconditionally, even with zero `inferred[]` entries. User-requested
+  UI polish after seeing an empty section (heading + caption, no
+  cards) render on a real provider. `ProviderDetailsScreen.tsx`'s
+  `inferred-section` block is now wrapped in `inferredList.length > 0
+  ? (...) : null`, matching the existing pattern already used for
+  `reputationLine`/`photosFact`. Updated the test that previously
+  asserted the caption always renders, and the spec line it was based
+  on. `npm test` (frontend): 170/170 passing; `tsc --noEmit`: clean.
 
 ## Blocked Work
 
