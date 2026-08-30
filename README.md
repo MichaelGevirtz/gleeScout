@@ -86,8 +86,9 @@ cd backend && npm run eval:extraction
 ## Architecture
 
 A visual system-design diagram (system context, the request pipeline,
-and the FACT / INFERRED / SIMULATED data model) is published here:
-[GleeScout Architecture](https://claude.ai/code/artifact/83004601-b87f-4093-9ea7-28229d74a832).
+and the FACT / INFERRED / SIMULATED data model) lives at
+[docs/architecture.html](docs/architecture.html) — open it directly in
+a browser.
 
 ```
 frontend/  Expo + React Native (iOS / Android / web)
@@ -102,6 +103,7 @@ backend/   Fastify + TypeScript
              recommendation/ provider-list assembly and provider selection
              providerQuestions/  M10 gap analysis + M11 simulated answers
              store/          in-memory session store (no database)
+             shared/         small cross-cutting utilities
 ```
 
 **The central rule: the LLM interprets, deterministic code decides.**
@@ -128,6 +130,7 @@ loses sessions; the app detects this and starts a fresh one.
 | `POST` | `/conversation/:id/message` | send a user message, get updated state |
 | `POST` | `/conversation/:id/providers` | research + rank providers (only once `phase` is `ready_for_search`) |
 | `POST` | `/conversation/:id/providers/select` | select one provider → simulated Q&A |
+| `GET` | `/conversation/:id/trace` | debug trace of pipeline steps (search, enrich, rank, select) with timings |
 
 A conversation is in phase `gathering` until date/time, location, and
 the category-specific attributes the LLM proposed are all present; it
