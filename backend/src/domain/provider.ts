@@ -28,5 +28,11 @@ export const ProviderCandidateSchema = z.object({
   inferred: z.array(InferredSchema(z.string())).optional(),
   reputationRating: z.number().min(1).max(5).optional(),
   reputationReviewCount: z.number().int().min(10).max(1000).optional(),
+  /**
+   * Provenance of the reputation number shown in the UI: "real" when
+   * `fields.rating` holds an independently sourced FACT, "mock" when the
+   * fabricated fallback was attached instead (task-98).
+   */
+  reputationSource: z.enum(["real", "mock"]).optional(),
 });
 export type ProviderCandidate = z.infer<typeof ProviderCandidateSchema>;

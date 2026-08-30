@@ -4,29 +4,10 @@ import { hostnameFromUrl } from "../shared/hostname";
 import { MatchGradeBadge } from "../components/MatchGradeBadge";
 import { ConfirmedRequirementsList } from "../components/ConfirmedRequirementsList";
 import { OtherProviderFacts } from "../components/OtherProviderFacts";
+import { deriveReputationDisplay, formatReputationLine } from "../shared/reputationDisplay";
 
 function deriveName(candidate: ProviderCandidate): string {
   return candidate.fields.name?.value ?? hostnameFromUrl(candidate.url);
-}
-
-function deriveRating(candidate: ProviderCandidate): string | undefined {
-  const rating = candidate.fields.rating?.value;
-  if (rating == null) {
-    return undefined;
-  }
-  const reviewCount = candidate.fields.reviewCount?.value;
-  return reviewCount != null ? `${rating} (${reviewCount} reviews)` : `${rating}`;
-}
-
-// reputationRating/reputationReviewCount are a blended average of two
-// fabricated mock lookups (never real Google/Yelp data) — always
-// labeled "(simulated)" and never merged with the FACT rating line.
-function deriveMockReputation(candidate: ProviderCandidate): string | undefined {
-  const { reputationRating, reputationReviewCount } = candidate;
-  if (reputationRating == null || reputationReviewCount == null) {
-    return undefined;
-  }
-  return `${reputationRating} · ${reputationReviewCount} reviews (simulated)`;
 }
 
 export interface RecommendationsScreenProps {
@@ -74,7 +55,9 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
       {providers.map((provider, index) => {
         const { candidate } = provider;
         const rank = index + 1;
-        const rating = deriveMockReputation(candidate) ?? deriveRating(candidate);
+        // A real, independently sourced rating always beats the fabricated
+        // mock; the mock is only a fallback, and always says so.
+        const reputation = deriveReputationDisplay(candidate);
 
         return (
           <Pressable
@@ -96,9 +79,9 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
 
             <OtherProviderFacts facts={provider.otherFacts} />
 
-            {rating && (
+            {reputation && (
               <Text testID={`provider-row-${index}-rating`} style={styles.reputation}>
-                ★ {rating}
+                {formatReputationLine(reputation)}
               </Text>
             )}
 

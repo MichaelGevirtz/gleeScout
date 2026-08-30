@@ -98,9 +98,28 @@ describe("ProviderDetailsScreen — match grade", () => {
 });
 
 describe("ProviderDetailsScreen — reputation", () => {
-  it("renders the blended reputation rating/count with a quiet, honest disclosure", async () => {
+  const noRealRating: ProviderCandidate = {
+    ...fullCandidate,
+    fields: { ...fullCandidate.fields, rating: undefined, reviewCount: undefined },
+  };
+
+  it("renders a real, independently sourced rating with its source and no simulated label", async () => {
+    await render(
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    const text = screen.getByTestId("reputation-line-text");
+    expect(text).toHaveTextContent("★ 4.8 · 120 reviews");
+    expect(text).not.toHaveTextContent(/simulated/i, { exact: false });
+    expect(screen.getByTestId("reputation-line-disclosure")).toHaveTextContent(
+      "Sourced from Google",
+      { exact: false },
+    );
+  });
+
+  it("labels the fabricated fallback as simulated, keeping the quiet disclosure underneath", async () => {
     const candidateWithReputation: ProviderCandidate = {
-      ...fullCandidate,
+      ...noRealRating,
       reputationRating: 4.3,
       reputationReviewCount: 217,
     };
@@ -109,20 +128,35 @@ describe("ProviderDetailsScreen — reputation", () => {
       <ProviderDetailsScreen candidate={candidateWithReputation} matchGrade="good" onSelectProvider={noop} />,
     );
 
-    expect(screen.getByTestId("reputation-line-text").props.children).toBe("★ 4.3 · 217 reviews");
+    // The "(simulated)" label is mandatory on every screen — the quieter
+    // disclosure line is an addition to it, never a substitute (task-98).
+    expect(screen.getByTestId("reputation-line-text")).toHaveTextContent(
+      "★ 4.3 · 217 reviews (simulated)",
+    );
     const disclosure = screen.getByTestId("reputation-line-disclosure");
     expect(disclosure).toHaveTextContent("Mock data for demo", { exact: false });
-
-    // Must never reuse M11's SIMULATED/NOT CONFIRMED disclosure language
-    // on the reputation line itself (the unrelated INFERRED caption
-    // elsewhere on the page legitimately contains "not confirmed").
-    expect(disclosure).not.toHaveTextContent(/simulated/i, { exact: false });
     expect(disclosure).not.toHaveTextContent(/not confirmed/i, { exact: false });
   });
 
-  it("renders nothing when reputationRating/reputationReviewCount are absent", async () => {
+  it("shows the real rating, not the fabricated one, when a candidate carries both", async () => {
+    const candidateWithBoth: ProviderCandidate = {
+      ...fullCandidate,
+      reputationRating: 4.3,
+      reputationReviewCount: 217,
+    };
+
     await render(
-      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
+      <ProviderDetailsScreen candidate={candidateWithBoth} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    const text = screen.getByTestId("reputation-line-text");
+    expect(text).toHaveTextContent("★ 4.8 · 120 reviews");
+    expect(text).not.toHaveTextContent("4.3", { exact: false });
+  });
+
+  it("renders nothing when there is neither a real rating nor mock reputation fields", async () => {
+    await render(
+      <ProviderDetailsScreen candidate={noRealRating} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.queryByTestId("reputation-line")).toBeNull();

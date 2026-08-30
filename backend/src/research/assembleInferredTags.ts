@@ -1,6 +1,7 @@
 import type { Inferred, SourceType } from "../domain/evidence.js";
 import type { ReviewAnalysisResult } from "../llm/reviewAnalysis.js";
 import { hostnameMatches, stripWww } from "../shared/hostname.js";
+import { isReputableDirectory } from "../shared/reviewDomains.js";
 
 export function classifySourceType(url: string, providerUrl: string): SourceType {
   const hostname = new URL(url).hostname;
@@ -9,6 +10,10 @@ export function classifySourceType(url: string, providerUrl: string): SourceType
   if (stripWww(hostname) === stripWww(providerHostname)) return "provider_website";
   if (hostnameMatches(hostname, "google.com")) return "google";
   if (hostnameMatches(hostname, "yelp.com")) return "yelp";
+  // Independent event-vendor directories (task-98): enrichment's source-targeted
+  // searches often land on one of these instead of Google/Yelp proper, and a
+  // rating there is still not the provider talking about itself.
+  if (isReputableDirectory(hostname)) return "directory";
   return "other";
 }
 

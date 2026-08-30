@@ -2,6 +2,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import Svg, { Circle, Line, Path, Polygon, Rect } from "react-native-svg";
 import type { MatchGrade, ProviderCandidate, ProviderCandidateFields } from "../domain/types";
 import { hostnameFromUrl } from "../shared/hostname";
+import { deriveReputationDisplay } from "../shared/reputationDisplay";
 import SelectedProviderHeader from "../components/SelectedProviderHeader";
 import { MatchGradeBadge } from "../components/MatchGradeBadge";
 
@@ -154,18 +155,12 @@ function SectionHeading({ icon, label }: { icon: "sourced" | "inferred"; label: 
   );
 }
 
-// The blended Google/Yelp mock (backend/src/recommendation/mockReputationSignals.ts)
-// is fully fabricated — no real API call is made. Unlike RecommendationsScreen's
-// "(simulated)" suffix (reused verbatim there), Provider Details uses a quieter,
-// still-honest disclosure line instead of that label or M11's SIMULATED/NOT
-// CONFIRMED treatment (see memory-bank/decisions.md D26 addendum for this task).
-function formatReputationLine(candidate: ProviderCandidate): string | null {
-  const { reputationRating, reputationReviewCount } = candidate;
-  if (reputationRating == null || reputationReviewCount == null) {
-    return null;
-  }
-  return `★ ${reputationRating} · ${reputationReviewCount} reviews`;
-}
+// A real, independently sourced rating FACT always wins here, shown with the
+// site it came from. The fabricated blend
+// (backend/src/recommendation/mockReputationSignals.ts) is only a fallback, and
+// when it is shown it always carries the mandatory "(simulated)" label — the
+// quieter disclosure line below it is an addition, never a substitute for that
+// label (task-98 supersedes the task-84 treatment described in decisions.md D26).
 
 function formatFactValue(value: string | number | string[]): string {
   if (Array.isArray(value)) {
@@ -217,7 +212,7 @@ export default function ProviderDetailsScreen({
   const providerName = candidate.fields.name?.value ?? hostnameFromUrl(candidate.url);
   const inferredList = candidate.inferred ?? [];
   const photosFact = candidate.fields.photos;
-  const reputationLine = formatReputationLine(candidate);
+  const reputation = deriveReputationDisplay(candidate);
 
   return (
     <View testID="provider-details-screen" style={styles.root}>
@@ -227,13 +222,15 @@ export default function ProviderDetailsScreen({
         <View style={styles.body}>
           <MatchGradeBadge grade={matchGrade} />
 
-          {reputationLine ? (
+          {reputation ? (
             <View testID="reputation-line" style={styles.reputationBlock}>
               <Text testID="reputation-line-text" style={styles.reputationText}>
-                {reputationLine}
+                {reputation.kind === "real" ? reputation.text : `${reputation.text} (simulated)`}
               </Text>
               <Text testID="reputation-line-disclosure" style={styles.reputationDisclosure}>
-                Mock data for demo · based on Google &amp; Yelp
+                {reputation.kind === "real"
+                  ? `Sourced from ${reputation.sourceLabel}`
+                  : "Mock data for demo · based on Google & Yelp"}
               </Text>
             </View>
           ) : null}

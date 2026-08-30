@@ -3,13 +3,20 @@ import { assembleInferredTags, classifySourceType } from "./assembleInferredTags
 import type { ReviewAnalysisResult } from "../llm/reviewAnalysis.js";
 
 const PROVIDER_URL = "https://www.bouncepalace.com/rentals";
+
+/**
+ * Rating fields are irrelevant to tag assembly (they take the separate FACT
+ * path via applyRatingFact) — always null here so these cases stay focused on
+ * the INFERRED mapping.
+ */
+function analysisOf(tags: ReviewAnalysisResult["tags"]): ReviewAnalysisResult {
+  return { tags, rating: null, reviewCount: null, ratingSourceUrl: null };
+}
 const RETRIEVED_AT = "2026-08-28T12:00:00.000Z";
 
 describe("assembleInferredTags", () => {
   it("maps a single { tag, excerpt } entry to one Inferred<string>", () => {
-    const analysis: ReviewAnalysisResult = {
-      tags: [{ tag: "good with toddlers", excerpt: "kids loved it" }],
-    };
+    const analysis = analysisOf([{ tag: "good with toddlers", excerpt: "kids loved it" }]);
 
     const result = assembleInferredTags({
       url: "https://www.yelp.com/biz/bounce-palace",
@@ -30,9 +37,7 @@ describe("assembleInferredTags", () => {
   });
 
   it("maps excerpt: null to evidenceExcerpt: undefined, not null", () => {
-    const analysis: ReviewAnalysisResult = {
-      tags: [{ tag: "frequently arrives late", excerpt: null }],
-    };
+    const analysis = analysisOf([{ tag: "frequently arrives late", excerpt: null }]);
 
     const result = assembleInferredTags({
       url: "https://www.yelp.com/biz/bounce-palace",
@@ -46,12 +51,10 @@ describe("assembleInferredTags", () => {
   });
 
   it("maps multiple tags to independent entries sharing url/retrievedAt/sourceType", () => {
-    const analysis: ReviewAnalysisResult = {
-      tags: [
+    const analysis = analysisOf([
         { tag: "good with toddlers", excerpt: "kids loved it" },
         { tag: "equipment is very clean", excerpt: null },
-      ],
-    };
+      ]);
 
     const result = assembleInferredTags({
       url: "https://www.google.com/search?q=bounce+palace",
@@ -78,7 +81,7 @@ describe("assembleInferredTags", () => {
   });
 
   it("maps an empty tags array to an empty array, not null", () => {
-    const analysis: ReviewAnalysisResult = { tags: [] };
+    const analysis = analysisOf([]);
 
     const result = assembleInferredTags({
       url: "https://www.yelp.com/biz/bounce-palace",
@@ -91,9 +94,7 @@ describe("assembleInferredTags", () => {
   });
 
   it("never mutates the input analysis object", () => {
-    const analysis: ReviewAnalysisResult = {
-      tags: [{ tag: "good with toddlers", excerpt: "kids loved it" }],
-    };
+    const analysis = analysisOf([{ tag: "good with toddlers", excerpt: "kids loved it" }]);
     const snapshot = JSON.parse(JSON.stringify(analysis));
 
     assembleInferredTags({
@@ -129,8 +130,17 @@ describe("classifySourceType", () => {
     expect(classifySourceType("https://www.yelp.com/biz/bounce-palace", PROVIDER_URL)).toBe("yelp");
   });
 
-  it("returns other for an unrelated hostname (e.g. a directory site), not directory", () => {
+  it("returns directory for an allowlisted independent event-vendor directory", () => {
     expect(classifySourceType("https://www.weddingwire.com/biz/bounce-palace", PROVIDER_URL)).toBe(
+      "directory"
+    );
+    expect(classifySourceType("https://www.gigsalad.com/bounce-palace", PROVIDER_URL)).toBe(
+      "directory"
+    );
+  });
+
+  it("returns other for an unrelated hostname that is not an allowlisted directory", () => {
+    expect(classifySourceType("https://www.someblog.com/biz/bounce-palace", PROVIDER_URL)).toBe(
       "other"
     );
   });

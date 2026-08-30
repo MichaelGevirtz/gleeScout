@@ -23,6 +23,52 @@ function candidateWith(fields: Partial<ProviderCandidate["fields"]>): ProviderCa
 }
 
 describe("reputationScore", () => {
+  it("scores a rating sourced from an allowlisted independent directory", () => {
+    const directoryUrl = "https://www.gigsalad.com/bounce-palace";
+    const candidate = candidateWith({
+      rating: fact(4.0, "gigsalad.com", directoryUrl),
+      reviewCount: fact(REVIEW_COUNT_CONFIDENCE_CAP, "gigsalad.com", directoryUrl),
+    });
+
+    expect(reputationScore(candidate)).toBe(4.0 / 5);
+  });
+
+  it("returns null for a rating sourced from a site that is neither google, yelp, nor an allowlisted directory", () => {
+    const blogUrl = "https://www.someblog.com/bounce-palace";
+    const candidate = candidateWith({
+      rating: fact(5, "someblog.com", blogUrl),
+      reviewCount: fact(500, "someblog.com", blogUrl),
+    });
+
+    expect(reputationScore(candidate)).toBeNull();
+  });
+
+  it("is unaffected by the fabricated reputationRating / reputationReviewCount display fields", () => {
+    const base = candidateWith({
+      rating: fact(4.5, "google.com", GOOGLE_URL),
+      reviewCount: fact(50, "google.com", GOOGLE_URL),
+    });
+    const withMock: ProviderCandidate = {
+      ...base,
+      reputationRating: 1,
+      reputationReviewCount: 999,
+      reputationSource: "mock",
+    };
+
+    expect(reputationScore(withMock)).toBe(reputationScore(base));
+  });
+
+  it("stays null when only the fabricated reputation fields are present", () => {
+    const candidate: ProviderCandidate = {
+      ...candidateWith({}),
+      reputationRating: 4.9,
+      reputationReviewCount: 800,
+      reputationSource: "mock",
+    };
+
+    expect(reputationScore(candidate)).toBeNull();
+  });
+
   it("scores a rating and review count both sourced from the same google.com page", () => {
     const candidate = candidateWith({
       rating: fact(4.5, "google.com", GOOGLE_URL),

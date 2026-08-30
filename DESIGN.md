@@ -34,19 +34,20 @@ than being written after the fact.
   once a provider is selected — trading strict fidelity to the example
   layout for not spending several LLM simulation calls on candidates
   the user may never look at twice.
-- Every provider card also shows a second, clearly labeled
-  "(simulated)" reputation number — a deterministic blend of two
-  fabricated mock lookups standing in for a Google-like and a
-  Yelp-like source. This is a cosmetic, portfolio-completeness touch,
-  not a real Google/Yelp integration and not a claim that either
-  platform was queried; it never overwrites or merges with the
-  existing FACT rating pulled from the provider's own site, and it
-  plays no role in ranking or the match grade. The provider's own
-  detail view repeats this same number with a quieter disclosure line
-  instead of the word "(simulated)" — still honest about it being mock
-  data, but visually distinct from the stronger simulated/not-confirmed
-  treatment used where a user could otherwise mistake a fabricated
-  answer for a real one.
+- A provider's star rating is real whenever one can be found: research
+  looks the provider up on independent review sources and records the
+  rating it actually finds there, as an observed fact with the page it
+  came from. A rating a provider publishes about itself is treated as
+  weaker evidence than an independently sourced one, and is replaced
+  when a genuine third-party rating turns up; an already independent
+  rating is never displaced.
+- The fabricated reputation number is now only a per-provider
+  fallback, shown when no real rating could be found for that
+  particular provider. Wherever it appears it is labeled
+  "(simulated)" — on every screen, without exception — so a reader can
+  always tell a looked-up number from a stand-in one. It plays no role
+  in ranking, the fit score, or the match grade, and never merges with
+  or overwrites an observed rating.
 - Selecting a provider means the client sends back the exact provider
   data it was already given in the list response; the server doesn't
   re-verify that data against what it originally returned. In a
@@ -232,11 +233,28 @@ than being written after the fact.
   for a fixed number of calls, it doesn't reduce that call volume, so
   going wider risks turning today's occasional rate-limit failure into
   a routine one.
+- Each provider's two reputation lookups (a Yelp-targeted and a
+  Google-targeted search) run at the same time rather than one after
+  the other, and one source failing never costs us the other. Both
+  pages are then read by a single LLM call instead of one call per
+  page: the searches are cheap and parallelizable, the LLM calls are
+  the rate-limited resource, so this doubles the evidence gathered per
+  provider while leaving the LLM call budget exactly where it was.
 - Enriching a provider with qualitative review signal is capped to a
   smaller subset of the already-discovered candidates, rather than
   enriching everything discovery found — discovery and enrichment
   together would otherwise push per-session LLM calls well past a
   rate limit already observed to cause failures at a lower volume.
+- Provider discovery fires 2-3 deterministically-built, source-diverse
+  search queries (a broad category+location search, a review-leaning
+  search, and — once a category requirement has a value — a
+  requirement-targeted search) concurrently instead of a single
+  query, then interleaves and deduplicates the results before capping
+  to the same extraction budget as before. This widens what the
+  search actually sees beyond one search engine's first page of
+  results without increasing Gemini call volume: the cap is applied
+  to the merged list before extraction runs, so more diverse
+  candidates compete for the same fixed number of extraction calls.
 - Considered, not implemented: a client-supplied idempotency key on
   message POSTs, so a retried request (timeout, double-tap) is
   recognized as the same logical message rather than processed

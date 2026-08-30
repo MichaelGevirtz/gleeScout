@@ -1905,6 +1905,78 @@
   asks a context-aware follow-up instead of crashing. `decisions.md`'s
   D5 task-41 addendum updated with a closure note.
 
+- **Task 98 — real Google/Yelp reputation with parallel dual-source
+  lookups and a labeled mock fallback** (DONE, see
+  `tasks/completed/task-98-real-reputation-dual-source-lookup.md`):
+  closes the gap where the enrichment scrape reached a real reviews
+  page, discarded the real rating (the LLM was never asked for it), and
+  a hash-derived fake was then displayed in preference to any real one
+  (`RecommendationsScreen.tsx` read
+  `deriveMockReputation(candidate) ?? deriveRating(candidate)`, and the
+  mock was always present, so a real FACT rating never rendered).
+  Enrichment now fires a Yelp-targeted and a Google-targeted Firecrawl
+  search per candidate concurrently (`Promise.allSettled`, so one source
+  failing does not lose the other) and feeds both pages into a **single**
+  `analyzeReviewText` call — Firecrawl per request goes 5 -> 10, Gemini
+  stays at 5 (D2b's free-tier cap is the binding constraint; see the new
+  D28). `ReviewAnalysisResultSchema` gained
+  `rating`/`reviewCount`/`ratingSourceUrl`; new
+  `backend/src/research/applyRatingFact.ts` writes them as FACTs behind
+  two deterministic gates — `ratingSourceUrl` must be one of the URLs
+  actually supplied in the prompt, and an existing rating is overwritten
+  only when it was self-reported from the provider's own domain (an
+  independently sourced rating is never displaced). New
+  `backend/src/shared/reviewDomains.ts` widens `reputationScore`'s
+  allowlist beyond google/yelp to reputable event-vendor directories and
+  is shared with `classifySourceType`, which now returns the previously
+  unreachable `"directory"` SourceType. `generateProviderList.ts` applies
+  `computeMockReputation` only to providers with no real `fields.rating`
+  and tags every provider `reputationSource: "real" | "mock"`;
+  `mockReputationSignals.ts` itself untouched. Frontend: new shared
+  `reputationDisplay.ts` makes the real rating always win and the
+  `(simulated)` label mandatory on both screens — superseding task-90's
+  choice to substitute a quiet disclosure line for that label on Provider
+  Details (see the D26 task-98 addendum). Backend `npm test`: 45 files /
+  449 tests passing; `typecheck` + `build` clean. Frontend `npm test`: 18
+  suites / 183 tests passing; `typecheck` clean. Concurrency is asserted
+  with a deferred promise (not a call count) and the one-LLM-call budget
+  has its own test. **Not yet validated against the real APIs** — see the
+  task's Follow-ups.
+
+- **Task 99 — Multi-query provider discovery fan-out at a fixed
+  extraction budget** (DONE, see
+  `tasks/completed/task-99-multi-query-discovery-fanout.md`): discovery
+  used to fire exactly one Firecrawl search
+  (`"{serviceCategory} in {location}"`) and never used any gathered
+  `categoryAttributes`. New `buildProviderSearchQueries` in
+  `backend/src/research/searchQuery.ts` deterministically builds 2-3
+  queries — the existing broad query, a review-leaning query, and (only
+  when a non-budget category attribute has a value) a
+  requirement-targeted query using that value; `buildProviderSearchQuery`
+  (singular) is untouched and still used by the new function.
+  `discoverProviderCandidates` now fires all queries concurrently via
+  `Promise.allSettled` (one query failing logs and yields `[]` for that
+  query, not a thrown error), round-robin interleaves the per-query
+  `SearchedPage[]` lists, dedupes by URL with `dedupByUrl`, then slices
+  to `MAX_DISCOVERY_RESULTS` (8) *before* extraction runs — a new
+  `PER_QUERY_SEARCH_LIMIT = 3` decouples "results requested per query"
+  from the extraction cap, so Gemini calls per request stay at the same
+  ceiling as before (Firecrawl searches go 1 -> 2or3;
+  scrapes ~1x8 -> ~9 raw -> capped to 8). `generateProviderList`'s
+  `discover` trace step now reports `detail.queries` (array) instead of
+  `detail.query` (string). **Frontend fix beyond the task's listed
+  files**: `TraceScreen.tsx` hardcoded `detail.query` in a step-specific
+  render branch — the task's own note that "the trace screen renders
+  detail generically" was checked and found incorrect (the discover case
+  is a hardcoded switch branch, not generic), so leaving it untouched
+  would have silently shown "undefined" for the search-query line in the
+  running app despite all tests staying green (its own test builds a
+  self-contained mock event, so it wouldn't have caught the mismatch).
+  Fixed to render `detail.queries.join(", ")`; its test updated to match.
+  Backend `npm test`: 45 files / 459 tests passing; `typecheck` + `build`
+  clean. Frontend `npm test`: 18 suites / 183 tests passing; `typecheck`
+  clean.
+
 ## Blocked Work
 
 - None.

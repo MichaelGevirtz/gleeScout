@@ -55,13 +55,15 @@ function EventDetail({ event }: { event: TraceEvent }) {
   }
 
   switch (event.step) {
-    case "discover":
+    case "discover": {
+      const queries = (detail.queries as string[] | undefined) ?? [];
       return (
         <>
-          <DetailLine label="Search query" value={String(detail.query)} />
+          <DetailLine label="Search queries" value={queries.join(", ")} />
           <DetailLine label="Candidates found" value={String(detail.candidatesFound)} />
         </>
       );
+    }
     case "enrich":
       return (
         <>

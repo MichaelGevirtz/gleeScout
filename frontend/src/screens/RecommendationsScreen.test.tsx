@@ -8,11 +8,11 @@ import type {
   RankingDimension,
 } from "../domain/types";
 
-function fact<T>(value: T): Fact<T> {
+function fact<T>(value: T, source = "example.com"): Fact<T> {
   return {
     value,
-    source: "example.com",
-    sourceUrl: "https://example.com",
+    source,
+    sourceUrl: `https://${source}`,
     retrievedAt: "2026-08-29T00:00:00.000Z",
   };
 }
@@ -163,11 +163,51 @@ describe("RecommendationsScreen", () => {
     expect(screen.queryByTestId("provider-row-0-rating")).toBeNull();
   });
 
-  it("renders the labeled simulated reputation line, replacing the fact rating line, when both mock fields are present", async () => {
+  it("renders a real, independently sourced rating with its source and without the simulated label", async () => {
     const providers = [
       makeProvider({
         candidate: makeCandidate({
-          fields: { name: fact("Blended Co"), rating: fact(4.9), reviewCount: fact(500) },
+          fields: {
+            name: fact("Fact Only Co"),
+            rating: fact(4.2, "yelp.com"),
+            reviewCount: fact(50, "yelp.com"),
+          },
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    const rating = screen.getByTestId("provider-row-0-rating");
+    expect(rating).toHaveTextContent("★ 4.2 · 50 reviews · Yelp");
+    expect(rating).not.toHaveTextContent("simulated", { exact: false });
+  });
+
+  it("renders the mock reputation line with the mandatory simulated label when there is no real rating", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          fields: { name: fact("Blended Co") },
+          reputationRating: 4.3,
+          reputationReviewCount: 217,
+        }),
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("provider-row-0-rating")).toHaveTextContent(
+      "★ 4.3 · 217 reviews (simulated)"
+    );
+  });
+
+  it("shows the real rating, not the fabricated one, when a provider carries both", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          fields: {
+            name: fact("Blended Co"),
+            rating: fact(4.9, "yelp.com"),
+            reviewCount: fact(500, "yelp.com"),
+          },
           reputationRating: 4.3,
           reputationReviewCount: 217,
         }),
@@ -176,23 +216,8 @@ describe("RecommendationsScreen", () => {
     await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     const rating = screen.getByTestId("provider-row-0-rating");
-    expect(rating).toHaveTextContent("★ 4.3 · 217 reviews (simulated)");
-    expect(rating).not.toHaveTextContent("4.9", { exact: false });
-    expect(rating).not.toHaveTextContent("500", { exact: false });
-  });
-
-  it("falls back to the existing fact rating line when mock reputation fields are absent", async () => {
-    const providers = [
-      makeProvider({
-        candidate: makeCandidate({
-          fields: { name: fact("Fact Only Co"), rating: fact(4.2), reviewCount: fact(50) },
-        }),
-      }),
-    ];
-    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
-
-    const rating = screen.getByTestId("provider-row-0-rating");
-    expect(rating).toHaveTextContent("★ 4.2 (50 reviews)");
+    expect(rating).toHaveTextContent("★ 4.9 · 500 reviews · Yelp");
+    expect(rating).not.toHaveTextContent("4.3", { exact: false });
     expect(rating).not.toHaveTextContent("simulated", { exact: false });
   });
 
@@ -317,7 +342,9 @@ describe("RecommendationsScreen", () => {
     await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
     expect(screen.getByTestId("match-grade-label")).toHaveTextContent("Good match");
-    expect(screen.getByTestId("provider-row-0-rating")).toHaveTextContent("★ 4.2 (50 reviews)");
+    expect(screen.getByTestId("provider-row-0-rating")).toHaveTextContent(
+      "★ 4.2 · 50 reviews · example.com"
+    );
   });
 
   it("renders the insufficient_data grade without the word 'Poor'", async () => {

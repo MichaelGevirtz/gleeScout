@@ -23,6 +23,37 @@ function candidate(url: string): ProviderCandidate {
   return { url, fields: {} };
 }
 
+/** A candidate carrying an independently sourced rating FACT from enrichment. */
+function candidateWithRealRating(url: string): ProviderCandidate {
+  const sourceUrl = "https://www.yelp.com/biz/x";
+  return {
+    url,
+    fields: {
+      rating: { value: 4.8, source: "yelp.com", sourceUrl, retrievedAt: "2026-08-30T00:00:00.000Z" },
+      reviewCount: { value: 340, source: "yelp.com", sourceUrl, retrievedAt: "2026-08-30T00:00:00.000Z" },
+    },
+  };
+}
+
+function scoreFor(c: ProviderCandidate, score: number): ProviderScore {
+  return {
+    candidate: c,
+    score,
+    dimensionScores: {
+      requirementMatch: score,
+      geoFit: score,
+      priceFit: score,
+      reputation: null,
+      evidenceQuality: score,
+    },
+    explanation: "test explanation",
+    fitScore: score,
+    matchGrade: "good",
+    confirmedRequirements: [],
+    otherFacts: [],
+  };
+}
+
 describe("generateProviderList", () => {
   it("calls discover, then enrich with discover's result, then rank with enrich's result and derived requirements, returning rank's result unchanged", async () => {
     const discovered = [candidate("https://a.example")];
@@ -46,7 +77,9 @@ describe("generateProviderList", () => {
       },
     ];
 
-    let capturedDiscoverParams: { serviceCategory: string; location: string } | undefined;
+    let capturedDiscoverParams:
+      | { serviceCategory: string; location: string; categoryAttributes: unknown }
+      | undefined;
     let capturedEnrichCandidates: ProviderCandidate[] | undefined;
     let capturedRankParams:
       | { candidates: ProviderCandidate[]; requirements: unknown }
@@ -73,7 +106,11 @@ describe("generateProviderList", () => {
 
     const result = await generateProviderList({ state, discover, enrich, rank });
 
-    expect(capturedDiscoverParams).toEqual({ serviceCategory: "bounce house rental", location: "Austin, TX" });
+    expect(capturedDiscoverParams).toEqual({
+      serviceCategory: "bounce house rental",
+      location: "Austin, TX",
+      categoryAttributes: state.categoryAttributes,
+    });
     expect(capturedEnrichCandidates).toEqual(discovered);
     expect(capturedRankParams?.candidates).toEqual(enriched);
     expect(capturedRankParams?.requirements).toEqual({
@@ -84,7 +121,11 @@ describe("generateProviderList", () => {
     expect(result.providers).toEqual([
       {
         ...ranked[0],
-        candidate: { ...ranked[0]!.candidate, ...computeMockReputation(ranked[0]!.candidate.url) },
+        candidate: {
+          ...ranked[0]!.candidate,
+          ...computeMockReputation(ranked[0]!.candidate.url),
+          reputationSource: "mock",
+        },
       },
     ]);
   });
@@ -142,7 +183,45 @@ describe("generateProviderList", () => {
       const expectedReputation = computeMockReputation(ranked[i]!.candidate.url);
       expect(providers[i]!.candidate.reputationRating).toBe(expectedReputation.reputationRating);
       expect(providers[i]!.candidate.reputationReviewCount).toBe(expectedReputation.reputationReviewCount);
+      expect(providers[i]!.candidate.reputationSource).toBe("mock");
     }
+  });
+
+  it("does not attach mock reputation to a provider that already has a real rating FACT", async () => {
+    const real = candidateWithRealRating("https://real.example");
+    const ranked = [scoreFor(real, 0.9)];
+
+    const { providers } = await generateProviderList({
+      state: readyState(),
+      discover: async () => [real],
+      enrich: async ({ candidates }) => candidates,
+      rank: () => ranked,
+    });
+
+    expect(providers[0]!.candidate.reputationSource).toBe("real");
+    expect(providers[0]!.candidate.reputationRating).toBeUndefined();
+    expect(providers[0]!.candidate.reputationReviewCount).toBeUndefined();
+    // The real FACT is untouched.
+    expect(providers[0]!.candidate.fields.rating?.value).toBe(4.8);
+  });
+
+  it("falls back to mock reputation per provider, not globally", async () => {
+    const real = candidateWithRealRating("https://real.example");
+    const noRating = candidate("https://norating.example");
+    const ranked = [scoreFor(real, 0.9), scoreFor(noRating, 0.5)];
+
+    const { providers } = await generateProviderList({
+      state: readyState(),
+      discover: async () => [real, noRating],
+      enrich: async ({ candidates }) => candidates,
+      rank: () => ranked,
+    });
+
+    expect(providers[0]!.candidate.reputationSource).toBe("real");
+    expect(providers[1]!.candidate.reputationSource).toBe("mock");
+    expect(providers[1]!.candidate.reputationRating).toBe(
+      computeMockReputation(noRating.url).reputationRating
+    );
   });
 
   it("returns a trace describing discovery, enrichment, and ranking", async () => {
@@ -178,7 +257,10 @@ describe("generateProviderList", () => {
 
     const discoverEvent = trace.find((e) => e.step === "discover");
     expect(discoverEvent?.detail).toEqual({
-      query: expect.stringContaining("Austin, TX"),
+      queries: [
+        "bounce house rental in Austin, TX",
+        "bounce house rental Austin, TX reviews",
+      ],
       candidatesFound: 3,
     });
 

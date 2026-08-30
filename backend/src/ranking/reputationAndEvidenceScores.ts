@@ -1,5 +1,5 @@
 import { ProviderCandidateFieldsSchema, type ProviderCandidate } from "../domain/provider.js";
-import { hostnameMatches } from "../shared/hostname.js";
+import { isIndependentReviewSource } from "../shared/reviewDomains.js";
 
 export const REVIEW_COUNT_CONFIDENCE_CAP = 20;
 
@@ -8,9 +8,11 @@ export function reputationScore(candidate: ProviderCandidate): number | null {
   if (!rating || !reviewCount) return null;
 
   if (rating.sourceUrl !== reviewCount.sourceUrl) return null;
-  if (!hostnameMatches(rating.source, "google.com") && !hostnameMatches(rating.source, "yelp.com")) {
-    return null;
-  }
+  // Only ratings this candidate did not publish about itself count. The
+  // allowlist covers Google, Yelp, and reputable independent directories
+  // (task-98) — deliberately never `candidate.reputationRating`, which is
+  // fabricated display-only data attached after ranking.
+  if (!isIndependentReviewSource(rating.source)) return null;
 
   return (rating.value / 5) * Math.min(reviewCount.value / REVIEW_COUNT_CONFIDENCE_CAP, 1);
 }

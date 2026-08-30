@@ -1,11 +1,11 @@
-import { buildProviderSearchQuery } from "../research/searchQuery.js";
+import { buildProviderSearchQueries } from "../research/searchQuery.js";
 import { discoverProviderCandidates } from "../research/discoverProviderCandidates.js";
 import { enrichProviderCandidates } from "../research/enrichProviderCandidates.js";
 import { rankProviders } from "../ranking/rankProviders.js";
 import { deriveConfirmedRequirements, deriveRequirementCatalog } from "../ranking/confirmedRequirements.js";
 import { deriveRankingRequirements } from "../ranking/types.js";
 import { computeMockReputation } from "./mockReputationSignals.js";
-import type { ConversationState } from "../domain/conversation.js";
+import type { CategoryAttributeSlot, ConversationState } from "../domain/conversation.js";
 import type { ProviderCandidate } from "../domain/provider.js";
 import type { ProviderScore, RankingRequirements } from "../ranking/types.js";
 import type { TraceEvent } from "../domain/trace.js";
@@ -13,6 +13,7 @@ import type { TraceEvent } from "../domain/trace.js";
 export type DiscoverFn = (params: {
   serviceCategory: string;
   location: string;
+  categoryAttributes: Record<string, CategoryAttributeSlot>;
 }) => Promise<ProviderCandidate[]>;
 
 export type EnrichFn = (params: { candidates: ProviderCandidate[] }) => Promise<ProviderCandidate[]>;
@@ -47,7 +48,7 @@ export async function generateProviderList({
   enrich = enrichProviderCandidates,
   rank = rankProviders,
 }: GenerateProviderListParams): Promise<GenerateProviderListResult> {
-  const { serviceCategory, coreAttributes } = state;
+  const { serviceCategory, coreAttributes, categoryAttributes } = state;
   if (serviceCategory === null) {
     throw new Error(
       "generateProviderList: state.serviceCategory is null. This should never happen for a session in phase 'ready_for_search'."
@@ -60,10 +61,10 @@ export async function generateProviderList({
   }
   const location = coreAttributes.location;
 
-  const query = buildProviderSearchQuery({ serviceCategory, location });
+  const queries = buildProviderSearchQueries({ serviceCategory, location, categoryAttributes });
 
   const discoverStartedAt = Date.now();
-  const discovered = await discover({ serviceCategory, location });
+  const discovered = await discover({ serviceCategory, location, categoryAttributes });
   const discoverEndedAt = Date.now();
 
   const enriched = await enrich({ candidates: discovered });
@@ -90,11 +91,21 @@ export async function generateProviderList({
       };
     });
 
-  // Blended reputation is attached strictly after ranking so it can
-  // never influence score/fitScore/matchGrade/order.
+  // Reputation provenance is resolved strictly after ranking so it can never
+  // influence score/fitScore/matchGrade/order. A provider that came out of
+  // enrichment with an independently sourced rating FACT keeps it and is marked
+  // "real"; only the ones with no real rating get the fabricated blend, marked
+  // "mock" so the UI can label it (task-98).
   const providers: ProviderScore[] = ranked.map((p) => ({
     ...p,
-    candidate: { ...p.candidate, ...computeMockReputation(p.candidate.url) },
+    candidate:
+      p.candidate.fields.rating !== undefined
+        ? { ...p.candidate, reputationSource: "real" as const }
+        : {
+            ...p.candidate,
+            ...computeMockReputation(p.candidate.url),
+            reputationSource: "mock" as const,
+          },
   }));
 
   const enrichedWithSignal = enriched.filter(
@@ -109,7 +120,7 @@ export async function generateProviderList({
     {
       step: "discover",
       summary: `Searched for "${serviceCategory}" providers in ${location}`,
-      detail: { query, candidatesFound: discovered.length },
+      detail: { queries, candidatesFound: discovered.length },
       timestamp: new Date(discoverEndedAt).toISOString(),
       durationMs: discoverEndedAt - discoverStartedAt,
     },

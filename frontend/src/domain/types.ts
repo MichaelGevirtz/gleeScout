@@ -71,6 +71,12 @@ export interface ProviderCandidate {
   inferred?: Inferred<string>[];
   reputationRating?: number;
   reputationReviewCount?: number;
+  /**
+   * Provenance of the reputation number: "real" when `fields.rating` holds an
+   * independently sourced FACT, "mock" when the fabricated fallback was
+   * attached instead. Mirrors the backend's ProviderCandidateSchema.
+   */
+  reputationSource?: "real" | "mock";
 }
 
 export type RankingDimension =

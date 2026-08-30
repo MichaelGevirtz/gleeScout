@@ -1856,6 +1856,101 @@ test` 160/160 green (17 in `ProviderDetailsScreen.test.tsx`, including
 new reputation-disclosure and sticky-footer-structure tests).
 `frontend npx tsc --noEmit` clean.
 
+**Addendum (2026-08-30, task-98) — the mock is demoted from a
+universal display value to a labeled per-provider fallback, and D26's
+"revisit only if a real integration lands" trigger has now fired.**
+Task-98 added the real reputation lookup D26 anticipated, so the mock
+path is no longer the only reputation number a card can show. What
+changed:
+
+- Enrichment now runs two source-targeted searches per candidate (Yelp
+  and Google) concurrently via `Promise.allSettled`, and the
+  review-analysis LLM step is asked for the page's stated
+  `rating`/`reviewCount`/`ratingSourceUrl` alongside its qualitative
+  tags. A returned rating becomes a real `Fact` on
+  `fields.rating`/`fields.reviewCount` via
+  `backend/src/research/applyRatingFact.ts`.
+- `computeMockReputation` now runs ONLY for ranked providers with no
+  real `fields.rating`. A new `reputationSource: "real" | "mock"` flag
+  on `ProviderCandidateSchema` (mirrored in `frontend/src/domain/types.ts`)
+  makes the provenance explicit to the UI rather than inferred from
+  field presence.
+- `mockReputationSignals.ts` itself is unchanged — only *when* it is
+  applied. D26's core invariant (fabricated values attach strictly
+  after ranking and never reach `score`/`fitScore`/`matchGrade`/order)
+  is preserved and now has two explicit regression tests in
+  `reputationAndEvidenceScores.test.ts`.
+- **The task-90 addendum above is superseded on one point**: Provider
+  Details no longer substitutes its quiet disclosure line *for* the
+  `(simulated)` label. The label is now mandatory on every screen that
+  shows a fabricated number; the "Mock data for demo · based on Google
+  & Yelp" line is kept as an addition underneath it. The reason the
+  two screens were allowed to differ (the mock was the only reputation
+  number either screen could show, so its treatment was purely a tone
+  choice) no longer holds — now that a card may show either a real or
+  a fabricated number, a user seeing an unlabeled number on one screen
+  has no way to tell which kind it is. Real ratings on Provider
+  Details instead get a "Sourced from {site}" line.
+- Both screens read from one shared helper
+  (`frontend/src/shared/reputationDisplay.ts`) so the "real always
+  wins, mock is always labeled" rule cannot drift between them again.
+  This also fixed a live display bug: `RecommendationsScreen.tsx` read
+  `deriveMockReputation(candidate) ?? deriveRating(candidate)`, and
+  since the mock was always present, a real FACT rating was never
+  shown at all.
+
+**Status**: ACCEPTED and implemented (task-98, DONE). Backend 449
+tests green, typecheck + build clean; frontend 183 tests green,
+typecheck clean.
+
+## D28 — Two Firecrawl searches per candidate, but still one Gemini call (task-98)
+
+**Decision**: Enrichment fires a Yelp-targeted and a Google-targeted
+Firecrawl search per candidate **concurrently** (`Promise.allSettled`,
+never `Promise.all` — one source failing must not lose the other),
+then concatenates whichever pages came back, each labeled with its
+URL, into a **single** `analyzeReviewText` prompt. Per provider-list
+request this takes Firecrawl from ~5 calls to ~10 while leaving Gemini
+at exactly 5 — one call per enriched candidate, unchanged.
+**Rationale**: The two integrations have opposite cost profiles. The
+binding constraint on this project is Gemini's free tier (5
+requests/minute, and a 20 requests/day cap on `gemini-3.6-flash` —
+D2b), which is why `MAX_ENRICHMENT_CANDIDATES` is 5 and
+`CONCURRENCY_LIMIT` is 3 in the first place. Firecrawl searches are
+comparatively cheap and parallelizable. So the right shape is "widen
+the evidence gathering, hold the LLM budget flat" — one call per page
+would have doubled the scarce resource to buy the same information.
+The outer `mapWithConcurrency(..., 3, ...)` is unchanged, so peak
+Firecrawl concurrency is 3 x 2 = 6.
+**Two deterministic gates keep the LLM from being trusted with state**
+(the D5/architecture-principle line): the returned `ratingSourceUrl`
+must be exactly one of the URLs supplied in the prompt (an invented or
+reconstructed URL is discarded, not written), and an existing
+`fields.rating` is overwritten only when its `sourceUrl` hostname
+matches the provider's own — a self-reported rating yields to an
+independent one, never the reverse.
+**Known approximation, accepted deliberately**: with two pages in one
+prompt, `assembleInferredTags` still attributes every INFERRED tag to
+a single primary page (Yelp before Google), so a tag lifted from the
+Google page carries the Yelp URL as its `evidenceSourceUrl`. This
+stays inside INFERRED and never touches FACT, so it does not violate
+D7; the fix (a nullable per-tag `sourceUrl` in the analysis schema) is
+logged as a follow-up in task-98 rather than built inline.
+**Also widened here**: `reputationScore`'s source allowlist went from
+{google.com, yelp.com} to those plus a hand-picked set of independent
+event-vendor directories (GigSalad, The Bash, WeddingWire, The Knot,
+Thumbtack, Eventective) in the new
+`backend/src/shared/reviewDomains.ts`, shared with
+`classifySourceType` so the two cannot drift. Without this, a
+successful scrape of a directory page would have had its rating
+silently rejected by ranking. The list is intuition, not evidence —
+task-98's follow-ups flag it for tuning once real-API runs show where
+the searches actually land.
+**Status**: Project decision. Revisit if real-API validation shows the
+source-targeted queries rarely return usable Yelp/Google pages, or if
+adding a third source is ever proposed — the "one combined prompt"
+shape is what makes another source affordable.
+
 ## D27 — Provider Details "Sourced facts" visual redesign + react-native-svg (task-86)
 
 **Decision**: `ProviderDetailsScreen.tsx`'s fact list moved from plain
@@ -2086,3 +2181,55 @@ in-place, not kept as a separate historical note, since the old rule
 has no ongoing relevance).
 **Assignment alignment**: PROJECT DECISION (UI polish), not an
 explicit assignment requirement.
+
+## D31 — Multi-query discovery fan-out at a fixed extraction budget (task-99)
+
+**Decision**: `discoverProviderCandidates` now issues 2-3
+deterministically-built queries (`buildProviderSearchQueries` in
+`searchQuery.ts`) instead of one — the existing broad
+`"{serviceCategory} in {location}"`, a review-leaning
+`"{serviceCategory} {location} reviews"`, and, only when a non-budget
+`categoryAttributes` entry has a value, a requirement-targeted query
+using that value. All queries fire concurrently via `Promise.allSettled`
+(one rejecting logs and contributes `[]`, never loses the others; all
+rejecting yields `[]` overall rather than throwing — a deliberate
+behavior change from the old single-query path, which propagated a
+search failure as a rejection). Results are round-robin interleaved
+across queries before `dedupByUrl`, then sliced to
+`MAX_DISCOVERY_RESULTS` (8) — a new `PER_QUERY_SEARCH_LIMIT = 3`
+decouples "results requested per query" from that cap. Because the cap
+is applied to the merged list *before* `mapWithConcurrency(...,
+extract)` runs, Gemini extraction calls stay at the same ceiling as
+before; only Firecrawl searches increase (1 -> 2 or 3) and the
+diversity of the up-to-8 pages extracted improves.
+**Rationale**: Discovery previously returned literally one search
+engine's first-N results and never used any of the category attributes
+the conversation worked to gather — the exact failure mode named by the
+assignment's "Data & Search Thinking" evaluation criterion, and a
+narrower version of what M7 had promised ("query generation from
+EventRequirements") but shipped as a single string template. Query
+construction stays deterministic string-building, not LLM-generated —
+an LLM call here would sit on the critical path, add a non-deterministic
+input to a currently trivially-testable step, and add a failure mode,
+for a speculative gain over three reasonable templates at this scale.
+**Also corrected during implementation**: the task file asserted "the
+trace screen renders detail generically," which was checked against
+`TraceScreen.tsx` and found false — its `EventDetail` component
+switches on `event.step` and the `"discover"` case hardcoded
+`String(detail.query)`. Left as-is, the UI would have silently shown
+"undefined" for the search-query line once the backend started emitting
+`detail.queries` (array) instead of `detail.query` (string), and no
+existing test would have caught it (the screen's own test constructs a
+self-contained mock trace event). Fixed in the same pass:
+`TraceScreen.tsx`'s discover case now renders
+`(detail.queries as string[]).join(", ")`; its test updated to supply
+`queries` instead of `query`. This file was outside task-99's listed
+`Files Touched`, but leaving a known, verified regression unfixed did
+not seem defensible under the task's own no-regression success
+criterion.
+**Status**: ACCEPTED and implemented (task-99, DONE). Backend 45 files
+/ 459 tests passing, typecheck + build clean; frontend 18 suites / 183
+tests passing, typecheck clean.
+**Assignment alignment**: EXPLICIT (Part 2 / evaluation criterion 4,
+Data & Search Thinking) — see the task file's Assignment Alignment
+section for the full citation.

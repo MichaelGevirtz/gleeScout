@@ -6,7 +6,10 @@ function discoverEvent(): TraceEvent {
   return {
     step: "discover",
     summary: 'Searched for "bounce house rental" providers in Austin, TX',
-    detail: { query: "bounce house rental in Austin, TX", candidatesFound: 8 },
+    detail: {
+      queries: ["bounce house rental in Austin, TX", "bounce house rental Austin, TX reviews"],
+      candidatesFound: 8,
+    },
     timestamp: "2026-08-29T00:00:00.000Z",
   };
 }
