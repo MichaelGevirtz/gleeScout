@@ -1,11 +1,13 @@
 # DESIGN.md — GleeScout Architecture & Product Rationale
 
 One sentence sums up the whole system: **the LLM interprets, and
-deterministic code decides.** Every LLM answer is checked before it's
-trusted — either it passes a strict schema check, or it's clearly
-labeled as simulated and never allowed to look like a fact. Everything
-below follows from that one rule, including a few times where holding
-to it caught a real bug before it shipped.
+deterministic code decides.** The LLM produces structured proposals
+such as requirements, extracted information, questions, or simulated
+responses, and the application validates those outputs before using
+them. The application owns state, workflow transitions, ranking, and
+what information is presented as fact. Sourced, inferred, and
+simulated information are kept explicitly separate so that an LLM
+generated answer can never silently become a provider fact.
 
 ---
 

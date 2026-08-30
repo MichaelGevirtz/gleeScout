@@ -88,7 +88,9 @@ cd backend && npm run eval:extraction
 A visual system-design diagram (system context, the request pipeline,
 and the FACT / INFERRED / SIMULATED data model) lives at
 [docs/architecture.html](docs/architecture.html) — open it directly in
-a browser.
+a browser, or view it rendered without cloning via
+[htmlpreview.github.io](https://htmlpreview.github.io/?https://github.com/MichaelGevirtz/gleeScout/blob/main/docs/architecture.html)
+(GitHub's own file viewer only shows HTML as source, never renders it).
 
 ```
 frontend/  Expo + React Native (iOS / Android / web)
