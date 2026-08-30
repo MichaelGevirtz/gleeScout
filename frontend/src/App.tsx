@@ -177,8 +177,7 @@ export default function App() {
     content = (
       <ProviderDetailsScreen
         candidate={selectedProvider.candidate}
-        dimensionScores={selectedProvider.dimensionScores}
-        explanation={selectedProvider.explanation}
+        matchGrade={selectedProvider.matchGrade}
         onSelectProvider={runSelectProvider}
       />
     );

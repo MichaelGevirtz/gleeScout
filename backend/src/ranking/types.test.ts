@@ -27,11 +27,20 @@ describe("deriveRankingRequirements", () => {
     expect(deriveRankingRequirements(state).categoryAttributes).toEqual(categoryAttributes);
   });
 
-  it("returns an object with exactly the two expected keys", () => {
+  it("returns an object with exactly the three expected keys", () => {
     const state = buildState({ coreAttributes: { location: "Denver, CO" } });
     expect(Object.keys(deriveRankingRequirements(state)).sort()).toEqual([
       "categoryAttributes",
       "location",
+      "serviceCategory",
     ]);
+  });
+
+  it("maps serviceCategory through, and to undefined (not null) when unset", () => {
+    const withCategory = buildState({ serviceCategory: "bounce house rental" });
+    expect(deriveRankingRequirements(withCategory).serviceCategory).toBe("bounce house rental");
+
+    const withoutCategory = buildState({ serviceCategory: null });
+    expect(deriveRankingRequirements(withoutCategory).serviceCategory).toBeUndefined();
   });
 });

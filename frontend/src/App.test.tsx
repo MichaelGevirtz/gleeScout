@@ -59,6 +59,7 @@ function providerScoreFixture(url: string, name: string): ProviderScore {
     explanation: `${name} is a strong match.`,
     fitScore: 0.8,
     matchGrade: "good",
+    confirmedRequirements: [{ label: name, kind: "serviceCategory" }],
   };
 }
 
@@ -186,13 +187,16 @@ describe("recommendations -> details -> select -> answers -> back", () => {
     return provider;
   }
 
-  it("tapping a row opens Provider Details with the exact candidate/dimensionScores/explanation", async () => {
+  it("tapping a row opens Provider Details with the exact candidate/matchGrade", async () => {
     const provider = await reachRecommendations();
 
     await fireEvent.press(screen.getByTestId("provider-row-0"));
 
     expect(screen.getByTestId("provider-details-screen")).toBeTruthy();
-    expect(screen.getByTestId("explanation").props.children).toBe(provider.explanation);
+    expect(screen.getByTestId("selected-provider-header-name").props.children).toBe(
+      provider.candidate.fields.name?.value,
+    );
+    expect(screen.getByTestId("match-grade-badge")).toBeTruthy();
   });
 
   it("selecting calls selectProvider with the exact candidate and shows loading then results", async () => {

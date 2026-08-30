@@ -3,21 +3,17 @@ import { MatchGradeBadge } from "./MatchGradeBadge";
 import type { MatchGrade } from "../domain/types";
 
 describe("MatchGradeBadge", () => {
-  it.each<[MatchGrade, string, string]>([
-    ["wonderful", "Wonderful match", "Meets your stated requirements very well"],
-    ["good", "Good match", "Meets most of your stated requirements"],
-    ["average", "Average match", "Partially meets your stated requirements"],
-    ["poor", "Poor match", "Meets few of your stated requirements"],
-    [
-      "insufficient_data",
-      "Not enough information to assess fit",
-      "We don't have enough data yet to judge how well this fits what you asked for",
-    ],
-  ])("renders the correct label and explanation for grade=%s", async (grade, label, explanation) => {
+  it.each<[MatchGrade, string]>([
+    ["wonderful", "Wonderful match"],
+    ["good", "Good match"],
+    ["average", "Average match"],
+    ["poor", "Poor match"],
+    ["insufficient_data", "Not enough information to assess fit"],
+  ])("renders the correct label for grade=%s, with no subtitle text", async (grade, label) => {
     await render(<MatchGradeBadge grade={grade} />);
 
     expect(screen.getByTestId("match-grade-label")).toHaveTextContent(label);
-    expect(screen.getByTestId("match-grade-explanation")).toHaveTextContent(explanation);
+    expect(screen.queryByTestId("match-grade-explanation")).toBeNull();
   });
 
   it("never renders the word 'Poor' for the insufficient_data grade", async () => {

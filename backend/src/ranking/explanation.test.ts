@@ -26,7 +26,7 @@ const ALL_NULL_SCORES: Record<RankingDimension, number | null> = {
 };
 
 describe("buildRankingExplanation", () => {
-  it("mentions requirement match, geo fit, price fit, and reputation when all five dimensions are non-null", () => {
+  it("mentions geo fit, price fit, and reputation when populated, never a requirement-match clause", () => {
     const candidate = candidateWith({
       pricing: fact("$250", "bouncepalace.com", "https://www.bouncepalace.com"),
       rating: fact(4.8, "google.com", GOOGLE_URL),
@@ -41,32 +41,34 @@ describe("buildRankingExplanation", () => {
       evidenceQuality: 0.7,
     });
 
-    expect(explanation).toContain("strong match for your requirements");
+    expect(explanation).not.toContain("match for your requirements");
     expect(explanation).toContain("serves your area");
     expect(explanation).toContain("within your stated budget");
     expect(explanation).toContain("4.8★ from 230 independently-sourced reviews");
     expect(explanation.toLowerCase()).not.toContain("evidence quality");
   });
 
-  it("omits the requirement-match clause when requirementMatch is null, keeping the rest", () => {
+  it("never mentions a requirement-match clause, regardless of that dimension's score", () => {
     const candidate = candidateWith({
       pricing: fact("$250", "bouncepalace.com", "https://www.bouncepalace.com"),
       rating: fact(4.8, "google.com", GOOGLE_URL),
       reviewCount: fact(230, "google.com", GOOGLE_URL),
     });
 
-    const explanation = buildRankingExplanation(candidate, {
-      requirementMatch: null,
-      geoFit: 1,
-      priceFit: 1,
-      reputation: 0.9,
-      evidenceQuality: 0.7,
-    });
+    for (const requirementMatch of [0.8, 0, null]) {
+      const explanation = buildRankingExplanation(candidate, {
+        requirementMatch,
+        geoFit: 1,
+        priceFit: 1,
+        reputation: 0.9,
+        evidenceQuality: 0.7,
+      });
 
-    expect(explanation).not.toContain("match for your requirements");
-    expect(explanation).toContain("serves your area");
-    expect(explanation).toContain("within your stated budget");
-    expect(explanation).toContain("4.8★ from 230 independently-sourced reviews");
+      expect(explanation).not.toContain("match for your requirements");
+      expect(explanation).toContain("serves your area");
+      expect(explanation).toContain("within your stated budget");
+      expect(explanation).toContain("4.8★ from 230 independently-sourced reviews");
+    }
   });
 
   it("omits any clause when geoFit is 0, never asserting a negative", () => {

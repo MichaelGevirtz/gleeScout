@@ -1,15 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import type {
-  ProviderCandidate,
-  ProviderCandidateFields,
-  ProviderScore,
-} from "../domain/types";
+import type { ProviderCandidate, ProviderScore } from "../domain/types";
 import { hostnameFromUrl } from "../shared/hostname";
 import { MatchGradeBadge } from "../components/MatchGradeBadge";
-
-function countFactsSourced(fields: ProviderCandidateFields): number {
-  return Object.values(fields).filter((value) => value != null).length;
-}
+import { ConfirmedRequirementsList } from "../components/ConfirmedRequirementsList";
 
 function deriveName(candidate: ProviderCandidate): string {
   return candidate.fields.name?.value ?? hostnameFromUrl(candidate.url);
@@ -80,22 +73,14 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
         <Text testID="recommendations-subtitle" style={styles.subtitle}>
           Based on your requirements
         </Text>
-        <View style={styles.metaRow}>
-          <Text testID="recommendations-count" style={styles.count}>
-            {providers.length} providers
-          </Text>
-          {/* Decorative only — real client-side sort is deferred (Open Decision #4, m14-ux-spec.md). */}
-          <View testID="sort-control" style={styles.sortPill}>
-            <Text style={styles.sortLabel}>Sort: Best match</Text>
-          </View>
-        </View>
+        <Text testID="recommendations-count" style={styles.count}>
+          {providers.length} providers
+        </Text>
       </View>
 
       {providers.map((provider, index) => {
         const { candidate } = provider;
         const rank = index + 1;
-        const factsSourced = countFactsSourced(candidate.fields);
-        const inferredCount = candidate.inferred?.length ?? 0;
         const price = derivePrice(candidate);
         const location = deriveLocation(candidate);
         const rating = deriveMockReputation(candidate) ?? deriveRating(candidate);
@@ -116,6 +101,8 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
 
             <MatchGradeBadge grade={provider.matchGrade} />
 
+            <ConfirmedRequirementsList requirements={provider.confirmedRequirements} />
+
             <Text testID={`provider-row-${index}-rationale`} style={styles.rationale}>
               {provider.explanation}
             </Text>
@@ -132,15 +119,6 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
                 ★ {rating}
               </Text>
             )}
-
-            <View style={styles.decisionRow}>
-              <Text testID={`provider-row-${index}-facts`} style={styles.evidence}>
-                {factsSourced} facts sourced
-              </Text>
-              <Text testID={`provider-row-${index}-inferred`} style={styles.evidence}>
-                {inferredCount} inferred
-              </Text>
-            </View>
 
             <Text style={styles.viewDetails}>View details</Text>
           </Pressable>
@@ -169,28 +147,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6b7280",
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
   count: {
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
-  },
-  sortPill: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  sortLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6b7280",
+    marginTop: 8,
   },
   emptyState: {
     padding: 24,
@@ -230,10 +191,6 @@ const styles = StyleSheet.create({
   reputation: {
     fontSize: 13,
     color: "#374151",
-  },
-  evidence: {
-    fontSize: 12,
-    color: "#9ca3af",
   },
   viewDetails: {
     fontSize: 13,

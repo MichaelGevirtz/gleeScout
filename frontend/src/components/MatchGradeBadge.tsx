@@ -1,18 +1,18 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { MatchGrade } from "../domain/types";
 
-// Pure label/copy/color lookup keyed by the backend-computed MatchGrade.
+// Pure label/color lookup keyed by the backend-computed MatchGrade.
 // No thresholds, no math — the backend (backend/src/ranking/fitScore.ts)
-// owns every numeric decision behind this grade.
-const GRADE_COPY: Record<MatchGrade, { label: string; explanation: string }> = {
-  wonderful: { label: "Wonderful match", explanation: "Meets your stated requirements very well" },
-  good: { label: "Good match", explanation: "Meets most of your stated requirements" },
-  average: { label: "Average match", explanation: "Partially meets your stated requirements" },
-  poor: { label: "Poor match", explanation: "Meets few of your stated requirements" },
-  insufficient_data: {
-    label: "Not enough information to assess fit",
-    explanation: "We don't have enough data yet to judge how well this fits what you asked for",
-  },
+// owns every numeric decision behind this grade. Label only — no
+// subtitle: the card's confirmed-requirements checklist and
+// explanation already say why, so a fixed generic sentence here
+// would only restate the label.
+const GRADE_LABELS: Record<MatchGrade, string> = {
+  wonderful: "Wonderful match",
+  good: "Good match",
+  average: "Average match",
+  poor: "Poor match",
+  insufficient_data: "Not enough information to assess fit",
 };
 
 const GRADE_COLORS: Record<MatchGrade, { background: string; text: string }> = {
@@ -28,16 +28,12 @@ export interface MatchGradeBadgeProps {
 }
 
 export function MatchGradeBadge({ grade }: MatchGradeBadgeProps) {
-  const copy = GRADE_COPY[grade];
   const colors = GRADE_COLORS[grade];
 
   return (
     <View testID="match-grade-badge" style={[styles.container, { backgroundColor: colors.background }]}>
       <Text testID="match-grade-label" style={[styles.label, { color: colors.text }]}>
-        {copy.label}
-      </Text>
-      <Text testID="match-grade-explanation" style={[styles.explanation, { color: colors.text }]}>
-        {copy.explanation}
+        {GRADE_LABELS[grade]}
       </Text>
     </View>
   );
@@ -54,9 +50,5 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "700",
-  },
-  explanation: {
-    fontSize: 12,
-    fontWeight: "500",
   },
 });

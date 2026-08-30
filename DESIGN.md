@@ -41,7 +41,12 @@ than being written after the fact.
   not a real Google/Yelp integration and not a claim that either
   platform was queried; it never overwrites or merges with the
   existing FACT rating pulled from the provider's own site, and it
-  plays no role in ranking or the match grade.
+  plays no role in ranking or the match grade. The provider's own
+  detail view repeats this same number with a quieter disclosure line
+  instead of the word "(simulated)" — still honest about it being mock
+  data, but visually distinct from the stronger simulated/not-confirmed
+  treatment used where a user could otherwise mistake a fabricated
+  answer for a real one.
 - Selecting a provider means the client sends back the exact provider
   data it was already given in the list response; the server doesn't
   re-verify that data against what it originally returned. In a
@@ -137,6 +142,15 @@ than being written after the fact.
   A provider with too little data on those three fit dimensions gets
   an honest "not enough information" label rather than being folded
   into "poor," which would misrepresent missing data as a bad fit.
+- Each provider card shows exactly which of the user's stated
+  requirements (the service, the location, each service-specific
+  detail) were actually confirmed by evidence about that provider —
+  not a generic dump of everything known about them. A provider that
+  confirms none of the user's requirements is left out of the
+  recommendation list entirely, and that exclusion happens before the
+  list is capped to its final size, so a weaker-looking but genuinely
+  relevant provider can take the place of a stronger-looking one that
+  matched nothing the user actually asked for.
 - The "why this provider ranks where it does" explanation shown to a
   user is built from plain deterministic sentence templates over the
   already-computed dimension scores, not a separate LLM call — it

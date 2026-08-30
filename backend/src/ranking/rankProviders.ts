@@ -1,5 +1,6 @@
 import type { ProviderCandidate } from "../domain/provider.js";
 import { computeAggregateScore } from "./aggregateScore.js";
+import { deriveConfirmedRequirements } from "./confirmedRequirements.js";
 import { buildRankingExplanation } from "./explanation.js";
 import { computeFitScore, deriveMatchGrade } from "./fitScore.js";
 import { geoFitScore, priceFitScore, requirementMatchScore } from "./matchAndFitScores.js";
@@ -33,8 +34,16 @@ export function rankProviders({
       explanation: buildRankingExplanation(candidate, dimensionScores),
       fitScore,
       matchGrade: deriveMatchGrade(fitScore),
+      confirmedRequirements: deriveConfirmedRequirements(candidate, requirements),
     };
   });
 
-  return scored.sort((a, b) => b.score - a.score).slice(0, MAX_RANKED_RESULTS);
+  // Filtered before the cap (not after) so a lower-scoring candidate that
+  // genuinely confirms a requirement can backfill a slot vacated by a
+  // higher-scoring candidate whose score came entirely from
+  // reputation/evidenceQuality with zero confirmed requirement matches.
+  return scored
+    .filter((p) => p.confirmedRequirements.length > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_RANKED_RESULTS);
 }

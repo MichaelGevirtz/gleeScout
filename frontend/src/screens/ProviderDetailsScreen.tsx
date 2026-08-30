@@ -1,13 +1,13 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Polygon, Rect } from "react-native-svg";
-import type { ProviderCandidate, ProviderCandidateFields, RankingDimension } from "../domain/types";
+import type { MatchGrade, ProviderCandidate, ProviderCandidateFields } from "../domain/types";
 import { hostnameFromUrl } from "../shared/hostname";
 import SelectedProviderHeader from "../components/SelectedProviderHeader";
+import { MatchGradeBadge } from "../components/MatchGradeBadge";
 
 export interface ProviderDetailsScreenProps {
   candidate: ProviderCandidate;
-  dimensionScores: Record<RankingDimension, number | null>;
-  explanation: string;
+  matchGrade: MatchGrade;
   onSelectProvider: (candidate: ProviderCandidate) => void;
 }
 
@@ -23,22 +23,6 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   provider_website: "provider website review",
   directory: "directory listing",
   other: "other source",
-};
-
-// Fixed order, per design/m14-ux-spec.md screen 4 — never derived from
-// object key order. Split into two groups so it's clear only the first
-// three drive the Recommendations screen's match grade (see
-// backend/src/ranking/fitScore.ts) — reputation/evidenceQuality are
-// provider-quality/evidence signals, not requirement fit.
-const FIT_DIMENSION_ORDER: RankingDimension[] = ["requirementMatch", "geoFit", "priceFit"];
-const QUALITY_DIMENSION_ORDER: RankingDimension[] = ["reputation", "evidenceQuality"];
-
-const DIMENSION_LABELS: Record<RankingDimension, string> = {
-  requirementMatch: "Requirement match",
-  geoFit: "Geographic fit",
-  priceFit: "Price fit",
-  reputation: "Reputation",
-  evidenceQuality: "Evidence quality",
 };
 
 // Fixed, deterministic iteration order for the "Sourced facts" list.
@@ -169,24 +153,17 @@ function SectionHeading({ icon, label }: { icon: "sourced" | "inferred"; label: 
   );
 }
 
-function DimensionBar({ dimension, score }: { dimension: RankingDimension; score: number | null }) {
-  return (
-    <View testID={`dimension-bar-${dimension}`}>
-      <Text>{DIMENSION_LABELS[dimension]}</Text>
-      {score === null ? (
-        <View testID={`dimension-bar-${dimension}-empty`} style={styles.dashedBar}>
-          <Text>Not enough data</Text>
-        </View>
-      ) : (
-        <View style={styles.barTrack}>
-          <View
-            testID={`dimension-bar-${dimension}-fill`}
-            style={[styles.barFill, { width: `${Math.round(score * 100)}%` }]}
-          />
-        </View>
-      )}
-    </View>
-  );
+// The blended Google/Yelp mock (backend/src/recommendation/mockReputationSignals.ts)
+// is fully fabricated — no real API call is made. Unlike RecommendationsScreen's
+// "(simulated)" suffix (reused verbatim there), Provider Details uses a quieter,
+// still-honest disclosure line instead of that label or M11's SIMULATED/NOT
+// CONFIRMED treatment (see memory-bank/decisions.md D26 addendum for this task).
+function formatReputationLine(candidate: ProviderCandidate): string | null {
+  const { reputationRating, reputationReviewCount } = candidate;
+  if (reputationRating == null || reputationReviewCount == null) {
+    return null;
+  }
+  return `★ ${reputationRating} · ${reputationReviewCount} reviews`;
 }
 
 function formatFactValue(value: string | number | string[]): string {
@@ -233,112 +210,128 @@ function PhotoGallery({ urls }: { urls: string[] }) {
 
 export default function ProviderDetailsScreen({
   candidate,
-  dimensionScores,
-  explanation,
+  matchGrade,
   onSelectProvider,
 }: ProviderDetailsScreenProps) {
   const providerName = candidate.fields.name?.value ?? hostnameFromUrl(candidate.url);
   const inferredList = candidate.inferred ?? [];
   const photosFact = candidate.fields.photos;
+  const reputationLine = formatReputationLine(candidate);
 
   return (
-    <ScrollView testID="provider-details-screen">
-      <SelectedProviderHeader providerName={providerName} />
+    <View testID="provider-details-screen" style={styles.root}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <SelectedProviderHeader providerName={providerName} />
 
-      <View style={styles.body}>
-        {explanation ? (
-          <Text testID="explanation" style={styles.explanation}>
-            {explanation}
-          </Text>
-        ) : null}
+        <View style={styles.body}>
+          <MatchGradeBadge grade={matchGrade} />
 
-        {photosFact ? <PhotoGallery urls={photosFact.value} /> : null}
+          {reputationLine ? (
+            <View testID="reputation-line" style={styles.reputationBlock}>
+              <Text testID="reputation-line-text" style={styles.reputationText}>
+                {reputationLine}
+              </Text>
+              <Text testID="reputation-line-disclosure" style={styles.reputationDisclosure}>
+                Mock data for demo · based on Google &amp; Yelp
+              </Text>
+            </View>
+          ) : null}
 
-        <View testID="fact-section">
-          <SectionHeading icon="sourced" label="Sourced facts" />
-          <View testID="fact-list">
-            {FIELD_ORDER.map((fieldName) => {
-              const fact = candidate.fields[fieldName];
-              if (!fact) {
-                return null;
-              }
-              return (
-                <View key={fieldName} testID={`fact-row-${fieldName}`} style={styles.factRow}>
-                  <View style={styles.factRowLeft}>
-                    <FieldIcon field={fieldName} />
-                    <Text style={styles.factRowLabel}>{FIELD_LABELS[fieldName]}</Text>
+          {photosFact ? <PhotoGallery urls={photosFact.value} /> : null}
+
+          <View testID="fact-section">
+            <SectionHeading icon="sourced" label="Sourced facts" />
+            <View testID="fact-list">
+              {FIELD_ORDER.map((fieldName) => {
+                const fact = candidate.fields[fieldName];
+                if (!fact) {
+                  return null;
+                }
+                return (
+                  <View key={fieldName} testID={`fact-row-${fieldName}`} style={styles.factRow}>
+                    <View style={styles.factRowLeft}>
+                      <FieldIcon field={fieldName} />
+                      <Text style={styles.factRowLabel}>{FIELD_LABELS[fieldName]}</Text>
+                    </View>
+                    <Text testID={`fact-row-${fieldName}-value`} style={styles.factRowValue}>
+                      {formatFactValue(fact.value)}
+                    </Text>
+                    <Text testID={`fact-row-${fieldName}-source`} style={styles.factRowSource}>
+                      {fact.source}
+                    </Text>
                   </View>
-                  <Text testID={`fact-row-${fieldName}-value`} style={styles.factRowValue}>
-                    {formatFactValue(fact.value)}
+                );
+              })}
+            </View>
+          </View>
+
+          <View testID="inferred-section">
+            <SectionHeading icon="inferred" label="Inferred from reviews" />
+            <Text testID="inferred-caption" style={styles.inferredCaption}>
+              {INFERRED_CAPTION}
+            </Text>
+            <View testID="inferred-list">
+              {inferredList.map((item, index) => (
+                <View key={index} testID={`inferred-card-${index}`} style={styles.inferredCard}>
+                  <Text testID={`inferred-card-${index}-value`} style={styles.inferredValue}>
+                    {item.value}
                   </Text>
-                  <Text testID={`fact-row-${fieldName}-source`} style={styles.factRowSource}>
-                    {fact.source}
+                  {item.evidenceExcerpt ? (
+                    <Text testID={`inferred-card-${index}-excerpt`} style={styles.inferredExcerpt}>
+                      &ldquo;{item.evidenceExcerpt}&rdquo;
+                    </Text>
+                  ) : null}
+                  <Text testID={`inferred-card-${index}-source-type`} style={styles.inferredSourceType}>
+                    {SOURCE_TYPE_LABELS[item.sourceType] ?? item.sourceType}
                   </Text>
                 </View>
-              );
-            })}
+              ))}
+            </View>
           </View>
         </View>
+      </ScrollView>
 
-        <View testID="inferred-section">
-          <SectionHeading icon="inferred" label="Inferred from reviews" />
-          <Text testID="inferred-caption" style={styles.inferredCaption}>
-            {INFERRED_CAPTION}
-          </Text>
-          <View testID="inferred-list">
-            {inferredList.map((item, index) => (
-              <View key={index} testID={`inferred-card-${index}`} style={styles.inferredCard}>
-                <Text testID={`inferred-card-${index}-value`} style={styles.inferredValue}>
-                  {item.value}
-                </Text>
-                {item.evidenceExcerpt ? (
-                  <Text testID={`inferred-card-${index}-excerpt`} style={styles.inferredExcerpt}>
-                    &ldquo;{item.evidenceExcerpt}&rdquo;
-                  </Text>
-                ) : null}
-                <Text testID={`inferred-card-${index}-source-type`} style={styles.inferredSourceType}>
-                  {SOURCE_TYPE_LABELS[item.sourceType] ?? item.sourceType}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View testID="dimension-bars">
-          <View testID="dimension-group-fit">
-            <Text style={styles.groupHeader}>Requirement fit</Text>
-            {FIT_DIMENSION_ORDER.map((dimension) => (
-              <DimensionBar key={dimension} dimension={dimension} score={dimensionScores[dimension]} />
-            ))}
-          </View>
-
-          <View testID="dimension-group-quality">
-            <Text style={styles.groupHeader}>Reputation & evidence</Text>
-            <Text testID="dimension-group-quality-caption" style={styles.groupCaption}>
-              Doesn&rsquo;t affect the match grade on the Recommendations screen.
-            </Text>
-            {QUALITY_DIMENSION_ORDER.map((dimension) => (
-              <DimensionBar key={dimension} dimension={dimension} score={dimensionScores[dimension]} />
-            ))}
-          </View>
-        </View>
-
+      <View testID="sticky-footer" style={styles.stickyFooter}>
         <Pressable testID="select-cta" onPress={() => onSelectProvider(candidate)} style={styles.ctaButton}>
           <Text style={styles.ctaButtonText}>Select {providerName}</Text>
         </Pressable>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   body: {
     padding: 16,
+    paddingBottom: 32,
   },
-  explanation: {
+  reputationBlock: {
+    marginTop: 10,
+  },
+  reputationText: {
     fontSize: 14,
-    color: "#374151",
-    lineHeight: 20,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  reputationDisclosure: {
+    fontSize: 11,
+    color: "#9ca3af",
+    marginTop: 2,
+  },
+  stickyFooter: {
+    backgroundColor: "#ffffff",
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    padding: 16,
   },
   sectionHeading: {
     flexDirection: "row",
@@ -440,35 +433,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 4,
   },
-  groupHeader: {
-    fontWeight: "700",
-    fontSize: 14,
-    marginTop: 12,
-  },
-  groupCaption: {
-    fontSize: 12,
-    color: "#6b7280",
-    marginBottom: 4,
-  },
-  dashedBar: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#999999",
-    borderRadius: 4,
-    padding: 8,
-  },
-  barTrack: {
-    height: 8,
-    backgroundColor: "#eeeeee",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  barFill: {
-    height: 8,
-    backgroundColor: "#4a90d9",
-  },
   ctaButton: {
-    marginTop: 26,
     backgroundColor: "#4338ca",
     borderRadius: 12,
     paddingVertical: 15,

@@ -1818,6 +1818,35 @@ blended/source-neutral naming). Revisit only if a future task adds a
 real Google/Yelp integration, at which point this mock path should be
 removed rather than kept alongside real data.
 
+**Addendum (2026-08-30, task-90) — a second consumer surface
+(`ProviderDetailsScreen.tsx`) needed the same disclosure question
+answered again, with a different visual constraint.** Task-90 removed
+Provider Details' internal-scoring dimension bars and added this same
+blended `reputationRating`/`reputationReviewCount` to its header (it
+was previously not rendered there at all). The reviewer initially
+asked for it to be shown with zero fabrication disclosure
+(`"★ 4.3 · 217 reviews"`, optionally `"Based on Google & Yelp"`),
+distinguishing it from M11's SIMULATED/NOT CONFIRMED treatment on the
+grounds that the mock stands in for a future real integration, unlike
+M11's simulated-provider-contact flow which stands in for a live
+conversation a user could mistake for real. Flagged back to the
+reviewer that this would drop the exact disclosure D26 added to
+satisfy Part 5 Trust & Grounding, and that removing it here — while
+`RecommendationsScreen.tsx` keeps `(simulated)` on the identical
+number — risks reading as inconsistent rather than deliberate.
+Resolved via AskUserQuestion: keep disclosure, but quieter than
+either existing treatment — Provider Details renders
+`"★ {rating} · {count} reviews"` with a small muted-gray subtext line,
+`"Mock data for demo · based on Google & Yelp"`, instead of a
+`(simulated)` suffix or M11's badge. `RecommendationsScreen.tsx`'s
+`(simulated)` phrasing was left unchanged (out of task-90's scope) —
+the two screens now phrase the same fabricated number differently on
+purpose, not by oversight.
+**Status**: ACCEPTED and implemented (task-90, DONE). `frontend npm
+test` 160/160 green (17 in `ProviderDetailsScreen.test.tsx`, including
+new reputation-disclosure and sticky-footer-structure tests).
+`frontend npx tsc --noEmit` clean.
+
 ## D27 — Provider Details "Sourced facts" visual redesign + react-native-svg (task-86)
 
 **Decision**: `ProviderDetailsScreen.tsx`'s fact list moved from plain
@@ -1856,6 +1885,69 @@ its own `.source`; merging would blur which source backs which value.
 **Status**: Project decision, direction confirmed by the reviewer
 (Option B) after reviewing both mocked options; dependency addition
 confirmed via AskUserQuestion mid-implementation.
+
+## D28 — Per-requirement confirmed-match checklist + pre-cap zero-confirmed filter (task-88, task-89)
+
+**Decision**: `rankProviders` now computes, per candidate, which of the
+user's stated requirements (service category, location, each
+non-budget category attribute — never `dateTime`, never budget) are
+confirmed by FACT evidence (`backend/src/ranking/confirmedRequirements.ts`,
+new), attached as `ProviderScore.confirmedRequirements`. A candidate
+with zero confirmed matches is filtered out of `rankProviders`'s output
+**before** the existing `.slice(0, MAX_RANKED_RESULTS)` cap, so a
+lower-scoring but genuinely eligible candidate can backfill a slot
+vacated by a higher-scoring candidate whose score came entirely from
+reputation/evidenceQuality. No existing dimension score
+(`requirementMatchScore`, `geoFitScore`, `priceFitScore`,
+`reputationScore`, `evidenceQualityScore`, `computeAggregateScore`,
+`computeFitScore`, `deriveMatchGrade`) was modified — every fixture
+that survives the new filter produces byte-identical
+score/dimensionScores/fitScore/matchGrade to before this task,
+verified by a dedicated regression check. `buildRankingExplanation`
+(`explanation.ts`) had its `requirementMatchClause` removed — it
+duplicated the same "match" information the new checklist and the
+existing `MatchGradeBadge` label already communicate; the
+geoFit/priceFit/reputation clauses are unchanged.
+**Rationale**: Part 6 explicitly lists "What information is confirmed"
+as required card content, and the existing pipeline could only answer
+that in aggregate (one blended ratio across all category attributes),
+never per-requirement, and never excluded a candidate that matched
+literally nothing the user asked for. The **pre-cap** filter placement
+(rather than filtering the already-capped top-5 list in the frontend)
+was a deliberate reviewer choice over the simpler/lower-risk
+alternative — confirmed directly via AskUserQuestion — because
+post-cap filtering has a real backfill gap: a discovered, genuinely
+eligible provider ranked 6th+ can never appear if a top-5 slot is
+removed, since the backend had already discarded it at the cap. This
+is the same scenario the post-M9 review's Finding 1 already flagged
+(reputation-heavy candidates can outrank confirmed-match candidates)
+— D28 is the display/eligibility-layer answer that finding's own
+routing note pointed at M12.
+**Matching convention**: case-insensitive substring, the same
+lexical-heuristic class already accepted for `requirementMatchScore`
+(D13d) — not new, not more/less accurate, only more granular
+(per-requirement instead of one blended ratio). serviceCategory
+additionally checks the provider's `name` FACT (business names often
+state their service line directly); category attributes stay scoped
+to `servicesOffered`/`policies` text only, exactly matching
+`requirementMatchScore`'s existing convention. Location reuses
+`geoFitScore` itself (imported, not reimplemented) — confirmed iff
+`geoFitScore(...) === 1`.
+**Frontend (task-89)**: `RecommendationsScreen.tsx`'s card hierarchy is
+now rank/name → `MatchGradeBadge` (label only — its previous fixed
+per-grade subtitle, e.g. "Meets most of your stated requirements", was
+removed as the exact duplicate the reviewer flagged) → new
+`ConfirmedRequirementsList` component rendering `confirmedRequirements`
+as "✓ {label}" rows → the trimmed `explanation` sentence → price/
+location → reputation → "View details". The fact/inferred counter row
+("6 facts sourced · 0 inferred") and the decorative "Sort: Best match"
+pill were removed entirely (data/ranking untouched, display only). No
+unconfirmed/✗ visual state was built — every surviving card is
+guaranteed ≥1 confirmed entry by the backend filter, so only confirmed
+items are ever shown, avoiding a speculative "pending" UI with no
+proven need.
+**Status**: PROJECT DESIGN DECISION, confirmed 2026-08-30, implemented
+in task-88 (backend) and task-89 (frontend).
 
 ## Open / Deferred
 

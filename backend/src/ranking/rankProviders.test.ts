@@ -195,4 +195,67 @@ describe("rankProviders", () => {
       expect(result[i].score).toBeGreaterThanOrEqual(result[i + 1].score);
     }
   });
+
+  it("attaches confirmedRequirements per candidate (task-88)", () => {
+    const result = rankProviders({ candidates: [candidateA], requirements: REQUIREMENTS });
+
+    expect(result[0]!.confirmedRequirements).toEqual(
+      expect.arrayContaining([
+        { label: "Austin, TX", kind: "location" },
+        { label: "toddler", kind: "categoryAttribute" },
+      ]),
+    );
+  });
+
+  it("excludes a candidate with zero confirmed requirement matches even if it would otherwise rank in the top 5 (task-88)", () => {
+    // No location field, servicesOffered text unrelated to any requirement,
+    // but reputation/evidenceQuality alone still clear the MIN_MEANINGFUL_DIMENSIONS
+    // floor and produce a real, non-zero aggregate score.
+    const strongReputationNoMatch: ProviderCandidate = {
+      url: "https://unmatched.example.com",
+      fields: {
+        rating: fact(5, "google.com", GOOGLE_URL),
+        reviewCount: fact(1000, "google.com", GOOGLE_URL),
+      },
+    };
+
+    const result = rankProviders({
+      candidates: [strongReputationNoMatch],
+      requirements: REQUIREMENTS,
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("backfills a lower-scoring eligible candidate when higher-scoring zero-confirmed candidates are filtered out pre-cap (task-88)", () => {
+    const strongReputationNoMatch = (i: number): ProviderCandidate => ({
+      url: `https://unmatched${i}.example.com`,
+      fields: {
+        rating: fact(5, "google.com", GOOGLE_URL),
+        reviewCount: fact(1000, "google.com", GOOGLE_URL),
+      },
+    });
+    const unmatched = [1, 2, 3, 4, 5].map(strongReputationNoMatch);
+
+    // Only requirementMatch (matches "toddler") is populated — a
+    // deliberately weak but genuinely eligible candidate.
+    const weaklyConfirmed: ProviderCandidate = {
+      url: "https://weak.example.com",
+      fields: {
+        servicesOffered: fact(["toddler party favors"], "weak.example.com", "https://weak.example.com"),
+      },
+    };
+
+    // Sanity check: without filtering, the 5 unmatched candidates alone
+    // would already fill every slot, leaving weaklyConfirmed out entirely.
+    const result = rankProviders({
+      candidates: [...unmatched, weaklyConfirmed],
+      requirements: REQUIREMENTS,
+    });
+
+    expect(result.map((r) => r.candidate.url)).not.toEqual(
+      expect.arrayContaining(unmatched.map((c) => c.url)),
+    );
+    expect(result.map((r) => r.candidate.url)).toContain(weaklyConfirmed.url);
+  });
 });

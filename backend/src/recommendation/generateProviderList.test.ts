@@ -41,6 +41,7 @@ describe("generateProviderList", () => {
         explanation: "test explanation",
         fitScore: null,
         matchGrade: "insufficient_data",
+        confirmedRequirements: [],
       },
     ];
 
@@ -75,6 +76,7 @@ describe("generateProviderList", () => {
     expect(capturedEnrichCandidates).toEqual(discovered);
     expect(capturedRankParams?.candidates).toEqual(enriched);
     expect(capturedRankParams?.requirements).toEqual({
+      serviceCategory: "bounce house rental",
       location: "Austin, TX",
       categoryAttributes: state.categoryAttributes,
     });
@@ -103,6 +105,7 @@ describe("generateProviderList", () => {
         explanation: "top match",
         fitScore: 0.9,
         matchGrade: "wonderful",
+        confirmedRequirements: [],
       },
       {
         candidate: candidateB,
@@ -117,6 +120,7 @@ describe("generateProviderList", () => {
         explanation: "average match",
         fitScore: 0.5,
         matchGrade: "average",
+        confirmedRequirements: [],
       },
     ];
 
@@ -157,6 +161,7 @@ describe("generateProviderList", () => {
         explanation: "test explanation",
         fitScore: 0.833,
         matchGrade: "wonderful",
+        confirmedRequirements: [],
       },
     ];
 
@@ -221,6 +226,7 @@ describe("generateProviderList", () => {
         explanation: "test",
         fitScore: null,
         matchGrade: "insufficient_data",
+        confirmedRequirements: [],
       }));
 
     const { trace } = await generateProviderList({ state: readyState(), discover, enrich, rank });

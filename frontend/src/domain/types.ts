@@ -82,6 +82,13 @@ export type RankingDimension =
 
 export type MatchGrade = "wonderful" | "good" | "average" | "poor" | "insufficient_data";
 
+export type ConfirmedRequirementKind = "serviceCategory" | "location" | "categoryAttribute";
+
+export interface ConfirmedRequirement {
+  label: string;
+  kind: ConfirmedRequirementKind;
+}
+
 export interface ProviderScore {
   candidate: ProviderCandidate;
   score: number;
@@ -89,6 +96,7 @@ export interface ProviderScore {
   explanation: string;
   fitScore: number | null;
   matchGrade: MatchGrade;
+  confirmedRequirements: ConfirmedRequirement[];
 }
 
 export interface SimulatedAnswer {

@@ -57,6 +57,7 @@ function makeProvider(overrides: Partial<ProviderScore> = {}): ProviderScore {
     explanation: "Strong match on requirements with solid reputation.",
     fitScore: 0.9,
     matchGrade: "wonderful",
+    confirmedRequirements: [{ label: "Austin, TX", kind: "location" }],
     ...overrides,
   };
 }
@@ -201,30 +202,94 @@ describe("RecommendationsScreen", () => {
     expect(ratingIndex).toBeGreaterThan(badgeIndex);
   });
 
-  it("matches known facts-sourced / inferred counts for a mixed fixture", async () => {
+  it("no longer renders fact/inferred counter text anywhere on the screen", async () => {
     const providers = [
       makeProvider({
         candidate: makeCandidate({
-          fields: {
-            name: fact("Mixed Co"),
-            pricing: fact("$100"),
-            rating: fact(4.5),
-          },
+          fields: { name: fact("Mixed Co"), pricing: fact("$100"), rating: fact(4.5) },
           inferred: [inferred("Responsive to messages"), inferred("Clean venue")],
         }),
-        dimensionScores: {
-          requirementMatch: 0.9,
-          geoFit: 0.5,
-          priceFit: 0.6,
-          reputation: null,
-          evidenceQuality: null,
-        },
       }),
     ];
     await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
-    expect(screen.getByTestId("provider-row-0-facts")).toHaveTextContent("3 facts sourced");
-    expect(screen.getByTestId("provider-row-0-inferred")).toHaveTextContent("2 inferred");
+    expect(screen.queryByTestId("provider-row-0-facts")).toBeNull();
+    expect(screen.queryByTestId("provider-row-0-inferred")).toBeNull();
+    const serialized = JSON.stringify(screen.toJSON());
+    expect(serialized).not.toContain("facts sourced");
+    expect(serialized).not.toContain("inferred");
+  });
+
+  it("no longer renders the sort control on a non-empty screen", async () => {
+    const providers = [makeProvider()];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.queryByTestId("sort-control")).toBeNull();
+    const serialized = JSON.stringify(screen.toJSON());
+    expect(serialized).not.toContain("Sort: Best match");
+  });
+
+  it("renders a checkmark row for every confirmed requirement when all are confirmed", async () => {
+    const providers = [
+      makeProvider({
+        confirmedRequirements: [
+          { label: "baby shower photographer", kind: "serviceCategory" },
+          { label: "Texas", kind: "location" },
+          { label: "baby shower", kind: "categoryAttribute" },
+        ],
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("confirmed-requirement-0")).toHaveTextContent("✓ baby shower photographer");
+    expect(screen.getByTestId("confirmed-requirement-1")).toHaveTextContent("✓ Texas");
+    expect(screen.getByTestId("confirmed-requirement-2")).toHaveTextContent("✓ baby shower");
+  });
+
+  it("renders a single checkmark row when only one requirement is confirmed", async () => {
+    const providers = [
+      makeProvider({ confirmedRequirements: [{ label: "Texas", kind: "location" }] }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("confirmed-requirement-0")).toHaveTextContent("✓ Texas");
+    expect(screen.queryByTestId("confirmed-requirement-1")).toBeNull();
+  });
+
+  it("renders only the confirmed subset when some requirements are confirmed and others are not", async () => {
+    const providers = [
+      makeProvider({
+        confirmedRequirements: [
+          { label: "Texas", kind: "location" },
+          { label: "baby shower", kind: "categoryAttribute" },
+        ],
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("confirmed-requirement-0")).toHaveTextContent("✓ Texas");
+    expect(screen.getByTestId("confirmed-requirement-1")).toHaveTextContent("✓ baby shower");
+    expect(screen.queryByTestId("confirmed-requirement-2")).toBeNull();
+  });
+
+  it("never substitutes the provider's own service-area FACT text for the user's requested location label", async () => {
+    const providers = [
+      makeProvider({
+        candidate: makeCandidate({
+          fields: {
+            name: fact("Skylight Photography"),
+            location: fact(
+              "The Woodlands, Cypress, Tomball, Waller, Magnolia, Montgomery, Conroe, Spring, and northwest Houston",
+            ),
+          },
+        }),
+        confirmedRequirements: [{ label: "Texas", kind: "location" }],
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("confirmed-requirement-0")).toHaveTextContent("✓ Texas");
+    expect(screen.getByTestId("confirmed-requirement-0")).not.toHaveTextContent("Woodlands", { exact: false });
   });
 
   it("renders the match grade badge with the correct label and reputation shown separately", async () => {

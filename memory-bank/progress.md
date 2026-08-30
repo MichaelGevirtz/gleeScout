@@ -1628,6 +1628,90 @@
   verification of this exact screen remains an open follow-up from
   task-86.
 
+- **Task 88 — Confirmed-requirements checklist + zero-confirmed-match
+  filter (backend)** (DONE, see
+  `tasks/completed/task-88-confirmed-requirements-backend.md`): first
+  of a two-task pair redesigning the provider card around requirement
+  evidence (see D28). New
+  `backend/src/ranking/confirmedRequirements.ts` exports
+  `deriveConfirmedRequirements(candidate, requirements)` — per-requirement
+  FACT-only confirmation (serviceCategory, location, non-budget category
+  attributes; never `dateTime`, never budget, never INFERRED/reputation).
+  `ranking/types.ts`'s `RankingRequirements` gained optional
+  `serviceCategory`; `ProviderScore` gained
+  `confirmedRequirements: ConfirmedRequirement[]`. `rankProviders.ts`
+  now filters zero-confirmed candidates out **before** the existing
+  top-5 cap (a genuine backfill, verified by a dedicated test — not
+  just "the ineligible one is gone"), with zero change to any
+  candidate's score/dimensionScores/fitScore/matchGrade for candidates
+  that survive. `explanation.ts` dropped its redundant
+  requirement-match clause (kept geoFit/priceFit/reputation clauses).
+  Notably, **zero existing `rankProviders.test.ts` fixtures needed
+  changes** — every pre-existing non-floor-excluded candidate already
+  had a genuine location or category-attribute match, verified
+  candidate-by-candidate before writing new tests rather than assumed.
+  18 new/changed tests across `confirmedRequirements.test.ts` (7 new),
+  `rankProviders.test.ts` (+3), `explanation.test.ts` (2 restructured),
+  `types.test.ts` (+1), `generateProviderList.test.ts` (fixture-only
+  updates, that file always fakes `rank`). `backend/npm test`:
+  383/383 passing. `backend/npm run typecheck`/`build`: clean.
+- **Task 89 — Provider card redesign around requirement evidence
+  (frontend)** (DONE, see
+  `tasks/completed/task-89-recommendations-card-requirement-evidence.md`):
+  second of the pair (see D28). New
+  `frontend/src/components/ConfirmedRequirementsList.tsx` renders
+  task-88's `confirmedRequirements` as "✓ {label}" rows, purely
+  presentational (no LLM text, no re-derivation of confirmation on
+  the frontend). `MatchGradeBadge.tsx` dropped its fixed per-grade
+  subtitle ("Meets most of your stated requirements" etc.) — label
+  only, since the checklist and the (already-trimmed, task-88)
+  explanation sentence now carry the "why." `RecommendationsScreen.tsx`
+  removed the "X facts sourced / Y inferred" counter row and the
+  decorative "Sort: Best match" pill entirely (data model and ranking
+  untouched — Provider Details still shows full FACT/INFERRED
+  evidence). New card hierarchy: rank/name -> grade label -> confirmed-
+  requirements checklist -> explanation -> price/location -> reputation
+  -> "View details". 12 new/changed tests across
+  `ConfirmedRequirementsList.test.tsx` (2 new), `MatchGradeBadge.test.tsx`
+  (rewritten), `RecommendationsScreen.test.tsx` (fact/inferred-counter
+  test replaced with an absence check; +1 sort-control absence test;
+  +3 checklist tests covering all/one/partial confirmation; +1 test
+  proving the checklist shows the user's short location label rather
+  than the provider's full service-area FACT text), plus
+  `App.test.tsx`'s shared `providerScoreFixture` updated.
+  `frontend/npm test`: 158/158 passing (151 pre-existing + 7 net new).
+  `frontend/npx tsc --noEmit`: clean. `DESIGN.md` gained one
+  Architecture Decisions bullet. **This closes the provider-card
+  requirement-evidence feature (D28), tasks 88-89 both DONE.**
+- **Task 90 — Provider Details simplification + sticky Select CTA
+  (frontend)** (DONE, see
+  `tasks/completed/task-90-provider-details-simplify-and-sticky-cta.md`):
+  `ProviderDetailsScreen.tsx` dropped both internal-scoring
+  dimension-bar sections ("Requirement fit", "Reputation & evidence")
+  and the free-text `explanation` line; `dimensionScores`/`explanation`
+  props replaced with `matchGrade: MatchGrade`. Header gained a reused,
+  unmodified `MatchGradeBadge` plus a new reputation line
+  (`"★ {rating} · {count} reviews"`) shown only when
+  `reputationRating`/`reputationReviewCount` are present. Root layout
+  changed to `View(flex:1) > [ScrollView(flex:1), fixed footer]`,
+  moving "Select {ProviderName}" into a sticky footer that stays
+  visible while the evidence below scrolls — no `App.tsx` layout
+  changes needed, since both the split-pane and mobile branches were
+  already `flex: 1`. Resolved, via `AskUserQuestion`, a direct tension
+  between the reviewer's initial ask (no fabrication disclosure on the
+  mock Google/Yelp reputation number) and D26's Part 5 Trust &
+  Grounding rationale for that same number's `(simulated)` label on
+  `RecommendationsScreen.tsx`: Provider Details now shows a quieter,
+  still-honest disclosure line (`"Mock data for demo · based on Google
+  & Yelp"`) instead of either `(simulated)` or M11's SIMULATED/NOT
+  CONFIRMED treatment — see D26 addendum. Landed alongside task-89,
+  which was independently in progress in the same working tree during
+  implementation; overlap was checked file-by-file beforehand (only
+  shared file was `App.test.tsx`, touched in one isolated, unrelated
+  test) and the final full suite passes with both tasks' changes
+  together. `frontend/npm test`: 160/160 passing. `frontend/npx tsc
+  --noEmit`: clean. No backend files touched.
+
 ## Blocked Work
 
 - None.

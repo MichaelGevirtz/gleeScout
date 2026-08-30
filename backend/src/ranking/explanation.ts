@@ -3,13 +3,6 @@ import type { RankingDimension } from "./types.js";
 
 const FALLBACK_EXPLANATION = "Limited information available for this provider.";
 
-function requirementMatchClause(score: number | null): string | null {
-  if (score === null) return null;
-  if (score >= 0.7) return "strong match for your requirements";
-  if (score > 0) return "partial match for your requirements";
-  return "limited match for your requirements";
-}
-
 function geoFitClause(score: number | null): string | null {
   if (score === 1) return "serves your area";
   return null;
@@ -36,7 +29,6 @@ export function buildRankingExplanation(
   dimensionScores: Record<RankingDimension, number | null>,
 ): string {
   const clauses = [
-    requirementMatchClause(dimensionScores.requirementMatch),
     geoFitClause(dimensionScores.geoFit),
     priceFitClause(dimensionScores.priceFit, candidate),
     reputationClause(dimensionScores.reputation, candidate),

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react-native";
 import ProviderDetailsScreen from "./ProviderDetailsScreen";
-import type { Fact, ProviderCandidate, RankingDimension } from "../domain/types";
+import type { Fact, ProviderCandidate } from "../domain/types";
 
 function fact<T>(value: T, source = "acmebouncehouses.com"): Fact<T> {
   return {
@@ -38,25 +38,12 @@ const fullCandidate: ProviderCandidate = {
   ],
 };
 
-const fullDimensionScores: Record<RankingDimension, number | null> = {
-  requirementMatch: 0.9,
-  geoFit: 1,
-  priceFit: 0.5,
-  reputation: 0.8,
-  evidenceQuality: 0.6,
-};
-
 const noop = () => {};
 
 describe("ProviderDetailsScreen — selected provider header", () => {
   it("renders the header at the top with the FACT name when present", async () => {
     await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByTestId("selected-provider-header")).toBeTruthy();
@@ -77,12 +64,7 @@ describe("ProviderDetailsScreen — selected provider header", () => {
     };
 
     await render(
-      <ProviderDetailsScreen
-        candidate={candidateWithoutName}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={candidateWithoutName} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByTestId("selected-provider-header-name").props.children).toBe(
@@ -91,15 +73,66 @@ describe("ProviderDetailsScreen — selected provider header", () => {
   });
 });
 
+describe("ProviderDetailsScreen — match grade", () => {
+  it("renders the MatchGradeBadge for the given grade", async () => {
+    await render(
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="wonderful" onSelectProvider={noop} />,
+    );
+
+    expect(screen.getByTestId("match-grade-badge")).toBeTruthy();
+  });
+
+  it("never renders internal scoring dimension UI", async () => {
+    await render(
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    expect(screen.queryByTestId("dimension-bars")).toBeNull();
+    expect(screen.queryByTestId("dimension-group-fit")).toBeNull();
+    expect(screen.queryByTestId("dimension-group-quality")).toBeNull();
+    expect(screen.queryByText("Requirement fit")).toBeNull();
+    expect(screen.queryByText("Reputation & evidence")).toBeNull();
+    expect(screen.queryByText(/affect the match grade/)).toBeNull();
+    expect(screen.queryByText("Not enough data")).toBeNull();
+  });
+});
+
+describe("ProviderDetailsScreen — reputation", () => {
+  it("renders the blended reputation rating/count with a quiet, honest disclosure", async () => {
+    const candidateWithReputation: ProviderCandidate = {
+      ...fullCandidate,
+      reputationRating: 4.3,
+      reputationReviewCount: 217,
+    };
+
+    await render(
+      <ProviderDetailsScreen candidate={candidateWithReputation} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    expect(screen.getByTestId("reputation-line-text").props.children).toBe("★ 4.3 · 217 reviews");
+    const disclosure = screen.getByTestId("reputation-line-disclosure");
+    expect(disclosure).toHaveTextContent("Mock data for demo", { exact: false });
+
+    // Must never reuse M11's SIMULATED/NOT CONFIRMED disclosure language
+    // on the reputation line itself (the unrelated INFERRED caption
+    // elsewhere on the page legitimately contains "not confirmed").
+    expect(disclosure).not.toHaveTextContent(/simulated/i, { exact: false });
+    expect(disclosure).not.toHaveTextContent(/not confirmed/i, { exact: false });
+  });
+
+  it("renders nothing when reputationRating/reputationReviewCount are absent", async () => {
+    await render(
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    expect(screen.queryByTestId("reputation-line")).toBeNull();
+  });
+});
+
 describe("ProviderDetailsScreen — sourced facts", () => {
   it("renders one fact row per non-null fields.* entry, with value + source caption", async () => {
     await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
     );
 
     // "name" never gets its own row — it's already shown in the header
@@ -129,12 +162,7 @@ describe("ProviderDetailsScreen — sourced facts", () => {
     };
 
     await render(
-      <ProviderDetailsScreen
-        candidate={candidateWithLongLocation}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={candidateWithLongLocation} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByTestId("fact-row-location-value").props.children).toBe(longLocation);
@@ -144,12 +172,7 @@ describe("ProviderDetailsScreen — sourced facts", () => {
 describe("ProviderDetailsScreen — photo gallery", () => {
   it("renders nothing when fields.photos is unset", async () => {
     await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.queryByTestId("photo-gallery")).toBeNull();
@@ -163,12 +186,7 @@ describe("ProviderDetailsScreen — photo gallery", () => {
     };
 
     await render(
-      <ProviderDetailsScreen
-        candidate={candidateWithPhotos}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={candidateWithPhotos} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByTestId("photo-gallery-hero").props.source).toEqual({ uri: urls[0] });
@@ -194,12 +212,7 @@ describe("ProviderDetailsScreen — photo gallery", () => {
     };
 
     await render(
-      <ProviderDetailsScreen
-        candidate={candidateWithOnePhoto}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={candidateWithOnePhoto} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByTestId("photo-gallery-hero")).toBeTruthy();
@@ -211,12 +224,7 @@ describe("ProviderDetailsScreen — photo gallery", () => {
 describe("ProviderDetailsScreen — inferred from reviews", () => {
   it("renders one inferred card per inferred[] entry; excerpt shown only when present", async () => {
     await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByTestId("inferred-card-0-value").props.children).toBe("Great with toddlers");
@@ -239,12 +247,7 @@ describe("ProviderDetailsScreen — inferred from reviews", () => {
     };
 
     await render(
-      <ProviderDetailsScreen
-        candidate={candidateWithNoInferred}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={candidateWithNoInferred} matchGrade="good" onSelectProvider={noop} />,
     );
 
     const captions = screen.getAllByText(
@@ -255,91 +258,10 @@ describe("ProviderDetailsScreen — inferred from reviews", () => {
   });
 });
 
-describe("ProviderDetailsScreen — dimension bars", () => {
-  it("renders the five dimension keys in the fixed order", async () => {
-    await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
-    );
-
-    const bars = screen.getAllByTestId(
-      /^dimension-bar-(requirementMatch|geoFit|priceFit|reputation|evidenceQuality)$/,
-    );
-    const order = bars.map((bar) => bar.props.testID);
-    expect(order).toEqual([
-      "dimension-bar-requirementMatch",
-      "dimension-bar-geoFit",
-      "dimension-bar-priceFit",
-      "dimension-bar-reputation",
-      "dimension-bar-evidenceQuality",
-    ]);
-  });
-
-  it("groups requirementMatch/geoFit/priceFit under 'Requirement fit' and reputation/evidenceQuality under 'Reputation & evidence'", async () => {
-    await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
-    );
-
-    const fitGroup = screen.getByTestId("dimension-group-fit");
-    const qualityGroup = screen.getByTestId("dimension-group-quality");
-
-    for (const dimension of ["requirementMatch", "geoFit", "priceFit"]) {
-      expect(within(fitGroup).getByTestId(`dimension-bar-${dimension}`)).toBeTruthy();
-    }
-    for (const dimension of ["reputation", "evidenceQuality"]) {
-      expect(within(qualityGroup).getByTestId(`dimension-bar-${dimension}`)).toBeTruthy();
-    }
-    expect(screen.getByTestId("dimension-group-quality-caption")).toHaveTextContent(
-      /affect the match grade/,
-    );
-  });
-
-  it("renders a dashed 'not enough data' state for a null dimension, never a 0-width bar", async () => {
-    const scoresWithNull: Record<RankingDimension, number | null> = {
-      ...fullDimensionScores,
-      priceFit: null,
-    };
-
-    await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={scoresWithNull}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
-    );
-
-    // Dashed empty-state present for the null dimension.
-    expect(screen.getByTestId("dimension-bar-priceFit-empty")).toBeTruthy();
-    expect(screen.getByText("Not enough data")).toBeTruthy();
-    // No fill bar of any width is rendered for it.
-    expect(screen.queryByTestId("dimension-bar-priceFit-fill")).toBeNull();
-
-    // A non-null dimension still gets a real fill bar (sanity check the
-    // dashed state isn't applied universally).
-    expect(screen.getByTestId("dimension-bar-geoFit-fill")).toBeTruthy();
-    expect(screen.queryByTestId("dimension-bar-geoFit-empty")).toBeNull();
-  });
-});
-
 describe("ProviderDetailsScreen — FACT/INFERRED structural separation", () => {
   it("never renders FACT and INFERRED rows inside the same list container", async () => {
     await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
     );
 
     const factList = screen.getByTestId("fact-list");
@@ -358,17 +280,26 @@ describe("ProviderDetailsScreen — FACT/INFERRED structural separation", () => 
   });
 });
 
-describe("ProviderDetailsScreen — CTA", () => {
+describe("ProviderDetailsScreen — sticky CTA footer", () => {
+  it("renders the sticky footer as a sibling of the scrollable content, not inside it", async () => {
+    await render(
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={noop} />,
+    );
+
+    const footer = screen.getByTestId("sticky-footer");
+    expect(within(footer).getByTestId("select-cta")).toBeTruthy();
+
+    // The footer is not nested inside the fact/inferred sections — it's a
+    // sibling of the scrollable body, so it stays visible while that scrolls.
+    expect(within(footer).queryByTestId("fact-section")).toBeNull();
+    expect(within(footer).queryByTestId("inferred-section")).toBeNull();
+  });
+
   it("tapping 'Select [name]' calls onSelectProvider with the exact candidate object", async () => {
     const onSelectProvider = jest.fn();
 
     await render(
-      <ProviderDetailsScreen
-        candidate={fullCandidate}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={onSelectProvider}
-      />,
+      <ProviderDetailsScreen candidate={fullCandidate} matchGrade="good" onSelectProvider={onSelectProvider} />,
     );
 
     expect(screen.getByText("Select Acme Bounce Houses")).toBeTruthy();
@@ -390,12 +321,7 @@ describe("ProviderDetailsScreen — CTA", () => {
     };
 
     await render(
-      <ProviderDetailsScreen
-        candidate={candidateWithoutName}
-        dimensionScores={fullDimensionScores}
-        explanation="Matches your requirements well."
-        onSelectProvider={noop}
-      />,
+      <ProviderDetailsScreen candidate={candidateWithoutName} matchGrade="good" onSelectProvider={noop} />,
     );
 
     expect(screen.getByText("Select www.bouncy-fun-rentals.com")).toBeTruthy();
