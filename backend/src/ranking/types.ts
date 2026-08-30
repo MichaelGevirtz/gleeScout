@@ -31,6 +31,19 @@ export interface ConfirmedRequirement {
   kind: ConfirmedRequirementKind;
 }
 
+export type OtherProviderFactKind =
+  | "location"
+  | "servicesOffered"
+  | "pricing"
+  | "availability"
+  | "policies"
+  | "contactMethod";
+
+export interface OtherProviderFact {
+  kind: OtherProviderFactKind;
+  value: string;
+}
+
 export interface ProviderScore {
   candidate: ProviderCandidate;
   score: number;
@@ -39,4 +52,5 @@ export interface ProviderScore {
   fitScore: number | null;
   matchGrade: MatchGrade;
   confirmedRequirements: ConfirmedRequirement[];
+  otherFacts: OtherProviderFact[];
 }

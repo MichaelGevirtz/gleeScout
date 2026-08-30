@@ -4,6 +4,7 @@ import { deriveConfirmedRequirements } from "./confirmedRequirements.js";
 import { buildRankingExplanation } from "./explanation.js";
 import { computeFitScore, deriveMatchGrade } from "./fitScore.js";
 import { geoFitScore, priceFitScore, requirementMatchScore } from "./matchAndFitScores.js";
+import { deriveOtherProviderFacts } from "./otherProviderFacts.js";
 import { evidenceQualityScore, reputationScore } from "./reputationAndEvidenceScores.js";
 import type { ProviderScore, RankingDimension, RankingRequirements } from "./types.js";
 
@@ -26,6 +27,7 @@ export function rankProviders({
     };
 
     const fitScore = computeFitScore(dimensionScores);
+    const confirmedRequirements = deriveConfirmedRequirements(candidate, requirements);
 
     return {
       candidate,
@@ -34,7 +36,8 @@ export function rankProviders({
       explanation: buildRankingExplanation(candidate, dimensionScores),
       fitScore,
       matchGrade: deriveMatchGrade(fitScore),
-      confirmedRequirements: deriveConfirmedRequirements(candidate, requirements),
+      confirmedRequirements,
+      otherFacts: deriveOtherProviderFacts(candidate, confirmedRequirements),
     };
   });
 

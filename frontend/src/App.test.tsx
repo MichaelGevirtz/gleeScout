@@ -60,6 +60,7 @@ function providerScoreFixture(url: string, name: string): ProviderScore {
     fitScore: 0.8,
     matchGrade: "good",
     confirmedRequirements: [{ label: name, kind: "serviceCategory" }],
+    otherFacts: [],
   };
 }
 

@@ -151,6 +151,13 @@ than being written after the fact.
   list is capped to its final size, so a weaker-looking but genuinely
   relevant provider can take the place of a stronger-looking one that
   matched nothing the user actually asked for.
+- Below those requirement checkmarks, the card also surfaces other
+  useful facts already known about the provider (pricing, policies,
+  additional services, and similar) — but only ones not already
+  implied by a requirement it just confirmed, and only the facts
+  themselves, never a generated sentence commenting on them. A
+  location that's already confirmed as matching, for instance, isn't
+  repeated a second time in more or less specific wording.
 - The "why this provider ranks where it does" explanation shown to a
   user is built from plain deterministic sentence templates over the
   already-computed dimension scores, not a separate LLM call — it

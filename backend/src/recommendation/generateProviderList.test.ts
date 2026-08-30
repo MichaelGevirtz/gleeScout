@@ -42,6 +42,7 @@ describe("generateProviderList", () => {
         fitScore: null,
         matchGrade: "insufficient_data",
         confirmedRequirements: [],
+        otherFacts: [],
       },
     ];
 
@@ -106,6 +107,7 @@ describe("generateProviderList", () => {
         fitScore: 0.9,
         matchGrade: "wonderful",
         confirmedRequirements: [],
+        otherFacts: [],
       },
       {
         candidate: candidateB,
@@ -121,6 +123,7 @@ describe("generateProviderList", () => {
         fitScore: 0.5,
         matchGrade: "average",
         confirmedRequirements: [],
+        otherFacts: [],
       },
     ];
 
@@ -162,6 +165,7 @@ describe("generateProviderList", () => {
         fitScore: 0.833,
         matchGrade: "wonderful",
         confirmedRequirements: [],
+        otherFacts: [],
       },
     ];
 
@@ -227,6 +231,7 @@ describe("generateProviderList", () => {
         fitScore: null,
         matchGrade: "insufficient_data",
         confirmedRequirements: [],
+        otherFacts: [],
       }));
 
     const { trace } = await generateProviderList({ state: readyState(), discover, enrich, rank });

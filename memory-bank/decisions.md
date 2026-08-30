@@ -1949,6 +1949,70 @@ proven need.
 **Status**: PROJECT DESIGN DECISION, confirmed 2026-08-30, implemented
 in task-88 (backend) and task-89 (frontend).
 
+## D29 — "Other provider facts" section: literal-FACT dedup against confirmed requirements, no generated text (task-91)
+
+**Decision**: `rankProviders` now also computes, per candidate,
+`ProviderScore.otherFacts` (`backend/src/ranking/otherProviderFacts.ts`,
+new) — a deterministic, literal-FACT-only list of additional useful
+`candidate.fields` values not already represented by the candidate's
+`confirmedRequirements`. Two dedup rules, both literal, no LLM/fuzzy/
+semantic matching: (1) `location` is omitted entirely whenever
+`confirmedRequirements` contains a `kind: "location"` entry (binary
+rule, not a "how different is it" judgment); (2) each `servicesOffered`
+entry is excluded iff it literally substring-overlaps, case-insensitive
+and in either direction
+(`serviceFact.includes(label)` OR `label.includes(serviceFact)`), any
+confirmed requirement's label; non-excluded entries are shown verbatim,
+capped at 4 with a bare `+N more` count suffix (mirrors
+`ProviderDetailsScreen`'s existing photo-filmstrip `+{remaining}`
+convention). `pricing`/`availability`/`policies`/`contactMethod` are
+never requirement-matched elsewhere, so they're always included
+verbatim when present — no dedup logic needed for them.
+`rating`/`reviewCount`/`name`/`photos` are excluded from `otherFacts`
+(already surfaced elsewhere on the card, or not a text row). The
+function reads only `candidate.fields` — it never touches
+`candidate.inferred`, keeping FACT/INFERRED separation intact.
+On the frontend, `RecommendationsScreen.tsx` stopped rendering
+`provider.explanation` as a card rationale line entirely (this is what
+removes the generated "serves your area." text a reviewer flagged as
+duplicating the `✓ Texas` checkmark) and replaced it with a new
+`OtherProviderFacts` component (purely presentational, same "no logic
+beyond mapping" convention as `ConfirmedRequirementsList`) rendering
+`otherFacts` between the confirmed-requirements checklist and the
+reputation line. `backend/src/ranking/explanation.ts` and
+`buildRankingExplanation`'s output are unchanged and still power
+`TraceScreen`'s full prose rationale — only the *card* stopped
+rendering it. Long free-text values are truncated with a plain
+character-slice + ellipsis (100 chars) in the frontend component only
+— a display/layout concern, not a backend data decision; the backend's
+`otherFacts` output and Provider Details' full text are always
+untruncated.
+**Rationale**: a reviewer correction to task-88/89's card flagged that
+(a) the generated `explanation` sentence produced presentation text
+("serves your area") that wasn't an existing FACT and duplicated the
+already-confirmed location checkmark, and (b) the card was hiding
+useful confirmed FACT information (pricing, policies, additional
+services, etc.) simply because it didn't map to a stated requirement.
+The fix needed to add literal evidence without ever generating,
+summarizing, or interpreting text — consistent with the project's
+FACT/INFERRED/LLM-vs-deterministic architecture split.
+**Known, accepted limitation (explicitly not "fixed" per reviewer
+instruction)**: literal substring matching means a `servicesOffered`
+entry that *paraphrases* a confirmed requirement rather than literally
+containing/being-contained-by its label is not deduplicated — e.g. a
+confirmed `serviceCategory` label `"baby shower photographer"` and a
+services entry `"Photography for baby showers, maternity and family
+events"` share no literal substring in either direction, so the latter
+still appears in `otherFacts`. This is the same class of limitation
+already documented for `requirementMatchScore` (D13d) and
+`confirmedRequirements` (D28) — lexical, not semantic, matching. No
+fuzzy/semantic/LLM fallback was added to close this gap; the reviewer
+was informed of the specific realistic example before implementation
+and explicitly asked for it to be flagged rather than silently
+"improved."
+**Status**: PROJECT DESIGN DECISION, confirmed 2026-08-30, implemented
+in task-91.
+
 ## Open / Deferred
 
 - Exact scoring weights for D8 will be finalized when ranking is

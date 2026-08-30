@@ -1711,6 +1711,45 @@
   test) and the final full suite passes with both tasks' changes
   together. `frontend/npm test`: 160/160 passing. `frontend/npx tsc
   --noEmit`: clean. No backend files touched.
+- **Task 91 — Recommendations card "other provider facts" section,
+  literal-FACT only** (DONE, see
+  `tasks/completed/task-91-recommendations-card-other-facts.md`): a
+  reviewer correction to task-88/89's card — see D29. New
+  `backend/src/ranking/otherProviderFacts.ts` /
+  `deriveOtherProviderFacts` computes `ProviderScore.otherFacts`
+  alongside `confirmedRequirements` in `rankProviders.ts`: literal
+  `candidate.fields` values not already represented by the confirmed
+  requirements (`location` suppressed iff a location requirement is
+  confirmed; `servicesOffered` entries excluded by literal, two-
+  direction, case-insensitive substring overlap against confirmed
+  labels, capped at 4 + `"+N more"`; `pricing`/`availability`/
+  `policies`/`contactMethod` always included verbatim when present).
+  Never reads `candidate.inferred`. New
+  `frontend/src/components/OtherProviderFacts.tsx` renders it purely
+  presentationally (same convention as `ConfirmedRequirementsList`),
+  with card-width-only ellipsis truncation at 100 chars — backend
+  output and Provider Details stay untruncated.
+  `RecommendationsScreen.tsx` stopped rendering `provider.explanation`
+  as a card rationale line at all (this is what removes the generated
+  "serves your area." text — `backend/src/ranking/explanation.ts` and
+  `TraceScreen.tsx` are unchanged and still show it in the trace's full
+  prose rationale); the old `decisionRow` (price/location) was folded
+  into the new `OtherProviderFacts` section. New card hierarchy: rank/
+  name -> grade -> confirmed-requirements checklist (WHY THIS PROVIDER
+  MATCHES) -> other-facts section (WHAT WE FOUND) -> reputation ->
+  "View details". 12 new backend tests
+  (`otherProviderFacts.test.ts`) + 1 new `rankProviders.test.ts`
+  integration test proving the dedup runs for real during ranking + 4
+  new `OtherProviderFacts.test.tsx` tests + `RecommendationsScreen.test.tsx`
+  updated (invalid rationale-text test replaced with an absence check;
+  price test retargeted to `other-provider-fact-pricing`; +2 other-
+  facts rendering tests). `App.test.tsx`/`generateProviderList.test.ts`
+  fixtures gained `otherFacts: []`. `backend/npm test`: 395/395.
+  `backend/npm run typecheck`: clean. `frontend/npm test`: 167/167.
+  `frontend/npx tsc --noEmit`: clean. Known, accepted, explicitly-
+  flagged limitation: literal substring matching won't dedup a
+  paraphrased services entry against a confirmed requirement (see D29)
+  — no semantic/LLM fallback added.
 
 ## Blocked Work
 

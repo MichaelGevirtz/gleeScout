@@ -58,6 +58,7 @@ function makeProvider(overrides: Partial<ProviderScore> = {}): ProviderScore {
     fitScore: 0.9,
     matchGrade: "wonderful",
     confirmedRequirements: [{ label: "Austin, TX", kind: "location" }],
+    otherFacts: [],
     ...overrides,
   };
 }
@@ -124,17 +125,29 @@ describe("RecommendationsScreen", () => {
     expect(screen.getByTestId("provider-row-0-name")).toHaveTextContent("no-name-provider.com");
   });
 
-  it("omits the price row entirely (no dash placeholder) when fields.pricing is absent", async () => {
+  it("omits the pricing other-fact row entirely when it's not present in otherFacts", async () => {
     const providers = [
       makeProvider({
         candidate: makeCandidate({
           fields: { name: fact("No Price Co") },
         }),
+        otherFacts: [],
       }),
     ];
     await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
-    expect(screen.queryByTestId("provider-row-0-price")).toBeNull();
+    expect(screen.queryByTestId("other-provider-fact-pricing")).toBeNull();
+  });
+
+  it("renders the pricing other-fact row verbatim when otherFacts includes it", async () => {
+    const providers = [
+      makeProvider({
+        otherFacts: [{ kind: "pricing", value: "$350 starting package" }],
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("other-provider-fact-pricing")).toHaveTextContent("$350 starting package");
   });
 
   it("omits the rating row entirely when fields.rating is absent", async () => {
@@ -323,12 +336,38 @@ describe("RecommendationsScreen", () => {
     expect(serialized).not.toMatch(/\d+%/);
   });
 
-  it("renders the explanation verbatim as the one-line rationale", async () => {
-    const explanation = "Ranks highly due to exact date match and top-tier reviews.";
+  it("never renders the generated explanation text on the card (e.g. 'serves your area')", async () => {
+    const explanation = "serves your area; within your stated budget ($300).";
     const providers = [makeProvider({ explanation })];
     await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
 
-    expect(screen.getByTestId("provider-row-0-rationale")).toHaveTextContent(explanation);
+    expect(screen.queryByTestId("provider-row-0-rationale")).toBeNull();
+    const serialized = JSON.stringify(screen.toJSON());
+    expect(serialized).not.toContain("serves your area");
+  });
+
+  it("shows other confirmed FACTs (WHAT WE FOUND) below the confirmed requirements", async () => {
+    const providers = [
+      makeProvider({
+        otherFacts: [
+          { kind: "servicesOffered", value: "corporate photography" },
+          { kind: "policies", value: "50% deposit required" },
+        ],
+      }),
+    ];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.getByTestId("other-provider-fact-servicesOffered")).toHaveTextContent(
+      "corporate photography",
+    );
+    expect(screen.getByTestId("other-provider-fact-policies")).toHaveTextContent("50% deposit required");
+  });
+
+  it("omits the other-facts section entirely when otherFacts is empty", async () => {
+    const providers = [makeProvider({ otherFacts: [] })];
+    await render(<RecommendationsScreen providers={providers} onSelectRow={jest.fn()} onViewTrace={jest.fn()} />);
+
+    expect(screen.queryByTestId("other-provider-facts")).toBeNull();
   });
 
   it("calls onSelectRow with the exact same ProviderScore object on tap, unreshaped", async () => {

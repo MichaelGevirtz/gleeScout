@@ -3,17 +3,10 @@ import type { ProviderCandidate, ProviderScore } from "../domain/types";
 import { hostnameFromUrl } from "../shared/hostname";
 import { MatchGradeBadge } from "../components/MatchGradeBadge";
 import { ConfirmedRequirementsList } from "../components/ConfirmedRequirementsList";
+import { OtherProviderFacts } from "../components/OtherProviderFacts";
 
 function deriveName(candidate: ProviderCandidate): string {
   return candidate.fields.name?.value ?? hostnameFromUrl(candidate.url);
-}
-
-function derivePrice(candidate: ProviderCandidate): string | undefined {
-  return candidate.fields.pricing?.value;
-}
-
-function deriveLocation(candidate: ProviderCandidate): string | undefined {
-  return candidate.fields.location?.value;
 }
 
 function deriveRating(candidate: ProviderCandidate): string | undefined {
@@ -81,8 +74,6 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
       {providers.map((provider, index) => {
         const { candidate } = provider;
         const rank = index + 1;
-        const price = derivePrice(candidate);
-        const location = deriveLocation(candidate);
         const rating = deriveMockReputation(candidate) ?? deriveRating(candidate);
 
         return (
@@ -103,16 +94,7 @@ export function RecommendationsScreen({ providers, onSelectRow, onViewTrace }: R
 
             <ConfirmedRequirementsList requirements={provider.confirmedRequirements} />
 
-            <Text testID={`provider-row-${index}-rationale`} style={styles.rationale}>
-              {provider.explanation}
-            </Text>
-
-            {(price || location) && (
-              <View style={styles.decisionRow}>
-                {price && <Text testID={`provider-row-${index}-price`}>{price}</Text>}
-                {location && <Text testID={`provider-row-${index}-location`}>{location}</Text>}
-              </View>
-            )}
+            <OtherProviderFacts facts={provider.otherFacts} />
 
             {rating && (
               <Text testID={`provider-row-${index}-rating`} style={styles.reputation}>
@@ -179,14 +161,6 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: "700",
     fontSize: 16,
-  },
-  rationale: {
-    fontSize: 13,
-    color: "#374151",
-  },
-  decisionRow: {
-    flexDirection: "row",
-    gap: 12,
   },
   reputation: {
     fontSize: 13,

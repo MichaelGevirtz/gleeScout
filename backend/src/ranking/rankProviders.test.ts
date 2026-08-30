@@ -207,6 +207,26 @@ describe("rankProviders", () => {
     );
   });
 
+  it("attaches otherFacts per candidate, deduplicated against confirmedRequirements (task-91)", () => {
+    const result = rankProviders({ candidates: [candidateA], requirements: REQUIREMENTS });
+
+    // candidateA's location ("Austin, TX") and one servicesOffered entry ("toddler
+    // bounce houses", which literally contains the confirmed "toddler" attribute
+    // label) are both already represented by confirmedRequirements, so both are
+    // suppressed here; the non-overlapping servicesOffered entry and pricing (never
+    // requirement-matched) are included.
+    expect(result[0]!.otherFacts).toEqual(
+      expect.arrayContaining([
+        { kind: "servicesOffered", value: "delivery included" },
+        { kind: "pricing", value: "$250" },
+      ]),
+    );
+    expect(result[0]!.otherFacts).not.toContainEqual(
+      expect.objectContaining({ kind: "location" }),
+    );
+    expect(JSON.stringify(result[0]!.otherFacts)).not.toContain("toddler bounce houses");
+  });
+
   it("excludes a candidate with zero confirmed requirement matches even if it would otherwise rank in the top 5 (task-88)", () => {
     // No location field, servicesOffered text unrelated to any requirement,
     // but reputation/evidenceQuality alone still clear the MIN_MEANINGFUL_DIMENSIONS
